@@ -86,7 +86,3 @@ Read [CONTRIBUTING.md](./CONTRIBUTING.md) and [CODE_OF_CONDUCT.md](./CODE_OF_CON
 ## Documentation and license
 
 Complete Jobicy API, feed, filter, and MCP documentation is available at [jobicy.com/jobs-rss-feed](https://jobicy.com/jobs-rss-feed). Source code is available under the [MIT License](./LICENSE).
-
-## Recommended GitHub topics
-
-`jobicy` · `remote-jobs` · `remote-work` · `jobs-api` · `job-board` · `telegram-bot` · `discord-bot` · `slack` · `nextjs` · `python` · `nodejs` · `n8n` · `mcp` · `ai-agents` · `developer-tools`
