@@ -1,4 +1,4 @@
-# Jobicy Integration Examples
+# Jobicy API Examples — Remote Jobs API, RSS & MCP Integrations
 
 Production-ready examples for integrating Jobicy remote jobs into websites, applications, bots, workflows and AI agents.
 
