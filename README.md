@@ -43,8 +43,8 @@ The public jobs API accepts `count` from 1 through 100, plus optional `geo`, `in
 ## Clone and start
 
 ```bash
-git clone https://github.com/jobicy/jobicy-integration-examples.git
-cd jobicy-integration-examples
+git clone https://github.com/Jobicy/jobicy-api-examples.git
+cd jobicy-api-examples
 ```
 
 Every directory is independent. Open its README and run the documented setup from inside that directory. Node.js examples require Node.js 20.12 or newer; the Next.js job board requires Node.js 20.9 or newer; the Python jobs API client requires Python 3.10 or newer.
