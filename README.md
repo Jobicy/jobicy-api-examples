@@ -75,6 +75,12 @@ Display **[Jobs powered by Jobicy](https://jobicy.com/)** in public interfaces a
 
 Request no more than 100 jobs, filter server-side when possible, cache results, deduplicate job IDs, and back off when receiving HTTP 429. The bot examples expose the requested five-minute development interval and enforce a 60-second technical minimum. Current published Jobicy fair-use guidance says automated production checks must not run more frequently than once per hour: set `CHECK_INTERVAL_SECONDS=3600` or greater before enabling a public deployment. RSS polling must likewise be hourly or less frequent. WordPress caches successful responses for one hour; the Next.js board revalidates hourly; the n8n workflow runs hourly.
 
+## Related Jobicy developer resources
+
+- [Jobicy Remote Jobs API](https://github.com/Jobicy/remote-jobs-api) — official documentation and examples for the public Jobicy Remote Jobs API and RSS feeds.
+- [Jobicy Remote Jobs MCP Server](https://github.com/Jobicy/remote-jobs-mcp-server) — MCP server for connecting AI assistants and agents to live remote jobs from Jobicy.
+- [Jobicy API, RSS & MCP Documentation](https://jobicy.com/jobs-rss-feed) — complete documentation for API endpoints, filters, RSS feeds, and MCP access.
+
 ## Security
 
 Keep tokens and webhook URLs in an untracked `.env` file, never in a commit. Validate destination webhook hosts, use HTTPS, escape job content before sending or rendering it, sanitize API output, apply request timeouts, and rotate any exposed credentials immediately. Report vulnerabilities through the process in [SECURITY.md](./SECURITY.md).
