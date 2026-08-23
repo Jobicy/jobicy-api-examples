@@ -1,0 +1,246 @@
+{
+  "name": "Jobicy Remote Jobs to Telegram",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 1
+            }
+          ]
+        }
+      },
+      "id": "5d8791c0-6127-47d2-b7ec-25b8880c3001",
+      "name": "Every hour",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        200,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "235f8b41-75d6-4e79-a8dc-7b72ea1a1001",
+              "name": "count",
+              "value": 50,
+              "type": "number"
+            },
+            {
+              "id": "235f8b41-75d6-4e79-a8dc-7b72ea1a1002",
+              "name": "geo",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "235f8b41-75d6-4e79-a8dc-7b72ea1a1003",
+              "name": "industry",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "235f8b41-75d6-4e79-a8dc-7b72ea1a1004",
+              "name": "keywords",
+              "value": "",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "5d8791c0-6127-47d2-b7ec-25b8880c3002",
+      "name": "Configure filters",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        420,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://jobicy.com/api/v2/remote-jobs",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "count",
+              "value": "={{ $json.count }}"
+            },
+            {
+              "name": "geo",
+              "value": "={{ $json.geo }}"
+            },
+            {
+              "name": "industry",
+              "value": "={{ $json.industry }}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "User-Agent",
+              "value": "Jobicy-Integration-Example/n8n"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "5d8791c0-6127-47d2-b7ec-25b8880c3003",
+      "name": "Request Jobicy jobs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        650,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const source = $input.first().json;\n\nif (!source || !Array.isArray(source.jobs)) {\n  throw new Error(\"Jobicy response does not contain a jobs array\");\n}\n\nconst seen = new Set();\nconst result = [];\n\nfor (const job of source.jobs) {\n  if (!job || typeof job !== \"object\" || job.id == null || typeof job.url !== \"string\") continue;\n\n  let parsed;\n\n  try {\n    parsed = new URL(job.url);\n  } catch {\n    continue;\n  }\n\n  if (parsed.protocol !== \"https:\" || parsed.hostname !== \"jobicy.com\") continue;\n\n  const id = String(job.id);\n  if (seen.has(id)) continue;\n  seen.add(id);\n  result.push({ json: job });\n}\n\nreturn result;"
+      },
+      "id": "5d8791c0-6127-47d2-b7ec-25b8880c3004",
+      "name": "Extract jobs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const configuration = $(\"Configure filters\").first().json;\nconst keywords = String(configuration.keywords || \"\")\n  .split(\",\")\n  .map((value) => value.trim().toLowerCase())\n  .filter(Boolean);\n\nif (!keywords.length) return $input.all();\n\nreturn $input.all().filter(({ json: job }) => {\n  const haystack = [\n    job.jobTitle,\n    job.companyName,\n    job.jobGeo,\n    job.jobExcerpt,\n    ...(Array.isArray(job.jobIndustry) ? job.jobIndustry : [])\n  ].filter(Boolean).join(\" \").toLowerCase();\n\n  return keywords.some((keyword) => haystack.includes(keyword));\n});"
+      },
+      "id": "5d8791c0-6127-47d2-b7ec-25b8880c3005",
+      "name": "Filter matching jobs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1110,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const state = $getWorkflowStaticData(\"global\");\nconst maximum = 2000;\nconst items = $input.all();\nconst previous = new Set(Array.isArray(state.jobIds) ? state.jobIds.map(String) : []);\n\nif (state.initialized !== true) {\n  state.jobIds = items.map((item) => String(item.json.id)).slice(-maximum);\n  state.initialized = true;\n  return [];\n}\n\nconst fresh = [];\n\nfor (const item of [...items].reverse()) {\n  const id = String(item.json.id);\n  if (previous.has(id)) continue;\n  previous.add(id);\n\n  const escapeHtml = (value) => String(value ?? \"\")\n    .replace(/&/g, \"&amp;\")\n    .replace(/</g, \"&lt;\")\n    .replace(/>/g, \"&gt;\")\n    .replace(/\"/g, \"&quot;\");\n  const title = escapeHtml(item.json.jobTitle || \"Remote opportunity\");\n  const company = escapeHtml(item.json.companyName || \"Company not specified\");\n  const location = escapeHtml(item.json.jobGeo || \"Location not specified\");\n  const excerpt = escapeHtml(String(item.json.jobExcerpt || \"\").slice(0, 420));\n  const url = escapeHtml(item.json.url);\n  const lines = [`<b>${title}</b>`, `Company: ${company}`, `Location: ${location}`];\n\n  if (excerpt) lines.push(\"\", excerpt);\n  lines.push(\"\", `<a href=\"${url}\">View job on Jobicy</a>`, `<a href=\"https://jobicy.com/\">Jobs powered by Jobicy</a>`);\n  fresh.push({ json: { ...item.json, telegramMessage: lines.join(\"\\n\") } });\n}\n\nstate.jobIds = [...previous].slice(-maximum);\nreturn fresh;"
+      },
+      "id": "5d8791c0-6127-47d2-b7ec-25b8880c3006",
+      "name": "Deduplicate and format",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1340,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $env.JOBICY_TELEGRAM_CHAT_ID }}",
+        "text": "={{ $json.telegramMessage }}",
+        "additionalFields": {
+          "parse_mode": "HTML",
+          "disable_web_page_preview": true
+        }
+      },
+      "id": "5d8791c0-6127-47d2-b7ec-25b8880c3007",
+      "name": "Send Telegram message",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1570,
+        300
+      ],
+      "webhookId": "e1317a2f-d6c8-4d95-98d5-8732b35ac1a0"
+    }
+  ],
+  "connections": {
+    "Every hour": {
+      "main": [
+        [
+          {
+            "node": "Configure filters",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configure filters": {
+      "main": [
+        [
+          {
+            "node": "Request Jobicy jobs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Request Jobicy jobs": {
+      "main": [
+        [
+          {
+            "node": "Extract jobs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract jobs": {
+      "main": [
+        [
+          {
+            "node": "Filter matching jobs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter matching jobs": {
+      "main": [
+        [
+          {
+            "node": "Deduplicate and format",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Deduplicate and format": {
+      "main": [
+        [
+          {
+            "node": "Send Telegram message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "none"
+  },
+  "staticData": null,
+  "tags": []
+}

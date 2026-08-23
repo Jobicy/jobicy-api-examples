@@ -1,0 +1,75 @@
+.jobicy-widget {
+  width: 100%;
+  color: #242424;
+}
+
+.jobicy-widget__list {
+  display: grid;
+  gap: 14px;
+}
+
+.jobicy-widget__job {
+  padding: 18px;
+  background: #fff;
+  border: 1px solid #e3e3e3;
+  border-radius: 4px;
+}
+
+.jobicy-widget__title {
+  margin: 0 0 8px;
+  font-size: 1.08rem;
+}
+
+.jobicy-widget__title a,
+.jobicy-widget__link,
+.jobicy-widget__attribution a {
+  color: #184a76;
+  text-decoration: none;
+}
+
+.jobicy-widget__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  margin: 0;
+  color: #5c5c5c;
+  font-size: 0.9rem;
+}
+
+.jobicy-widget__salary {
+  margin: 12px 0 0;
+  font-weight: 600;
+}
+
+.jobicy-widget__excerpt {
+  margin: 12px 0;
+  color: #484848;
+  line-height: 1.6;
+}
+
+.jobicy-widget__link {
+  display: inline-block;
+  margin-top: 8px;
+  font-weight: 600;
+}
+
+.jobicy-widget__attribution {
+  margin: 15px 0 0;
+  text-align: right;
+  font-size: 0.78rem;
+}
+
+.jobicy-widget__empty {
+  padding: 16px;
+  background: #f7f7f7;
+}
+
+@media (max-width: 520px) {
+  .jobicy-widget__job {
+    padding: 14px;
+  }
+
+  .jobicy-widget__meta {
+    flex-direction: column;
+  }
+}

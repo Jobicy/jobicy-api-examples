@@ -1,0 +1,17 @@
+{
+  "name": "jobicy-node-client-example",
+  "version": "1.0.0",
+  "description": "Reusable zero-dependency JavaScript client for the public Jobicy remote jobs API",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "exports": "./src/index.js",
+  "scripts": {
+    "check": "node --check src/index.js && node --check examples/search.js && node --check examples/filter.js && node --check examples/export-json.js",
+    "example:search": "node examples/search.js",
+    "example:filter": "node examples/filter.js",
+    "example:export": "node examples/export-json.js"
+  }
+}

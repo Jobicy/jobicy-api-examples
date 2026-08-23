@@ -1,0 +1,14 @@
+{
+  "name": "jobicy-discord-bot",
+  "version": "1.0.0",
+  "description": "Discord Bot integration for the public Jobicy remote jobs API",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20.12.0"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "check": "node --check src/index.js && node --check src/jobicy.js && node --check src/storage.js && node --check src/discord.js"
+  }
+}

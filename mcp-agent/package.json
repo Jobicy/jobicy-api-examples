@@ -1,0 +1,20 @@
+{
+  "name": "jobicy-mcp-agent-example",
+  "version": "1.0.0",
+  "description": "Official MCP SDK client for discovering and using the public Jobicy jobs MCP server",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20.12.0"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "tools": "node src/index.js tools",
+    "jobs": "node src/index.js jobs",
+    "taxonomies": "node src/index.js taxonomies",
+    "check": "node --check src/index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0"
+  }
+}
