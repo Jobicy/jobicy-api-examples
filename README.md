@@ -73,7 +73,7 @@ Display **[Jobs powered by Jobicy](https://jobicy.com/)** in public interfaces a
 
 ## Rate limits and responsible use
 
-Request no more than 100 jobs, filter server-side when possible, cache results, deduplicate job IDs, and back off when receiving HTTP 429. The bot examples expose the requested five-minute development interval and enforce a 60-second technical minimum. Current published Jobicy fair-use guidance says automated production checks must not run more frequently than once per hour: set `CHECK_INTERVAL_SECONDS=3600` or greater before enabling a public deployment. RSS polling must likewise be hourly or less frequent. WordPress caches successful responses for one hour; the Next.js board revalidates hourly; the n8n workflow runs hourly.
+Request no more than 200 jobs, filter server-side when possible, cache results, deduplicate job IDs, and back off when receiving HTTP 429. The bot examples expose the requested five-minute development interval and enforce a 60-second technical minimum. Current published Jobicy fair-use guidance says automated production checks must not run more frequently than once per hour: set `CHECK_INTERVAL_SECONDS=3600` or greater before enabling a public deployment. RSS polling must likewise be hourly or less frequent. WordPress caches successful responses for one hour; the Next.js board revalidates hourly; the n8n workflow runs hourly.
 
 ## Related Jobicy developer resources
 
