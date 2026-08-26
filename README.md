@@ -11,7 +11,7 @@ Production-ready examples for integrating Jobicy remote jobs into websites, appl
 - [MCP endpoint](https://jobicy.com/mcp)
 - [Official API, RSS, and MCP documentation](https://jobicy.com/jobs-rss-feed)
 
-The public jobs API accepts `count` from 1 through 100, plus optional `geo`, `industry`, and `tag` query parameters. Successful responses contain a `jobs` array. Discover valid current filter slugs with [`?get=locations`](https://jobicy.com/api/v2/remote-jobs?get=locations) and [`?get=industries`](https://jobicy.com/api/v2/remote-jobs?get=industries).
+The public jobs API accepts `count` from 1 through 200, plus optional `geo`, `industry`, and `tag` query parameters. Successful responses contain a `jobs` array. Discover valid current filter slugs with [`?get=locations`](https://jobicy.com/api/v2/remote-jobs?get=locations) and [`?get=industries`](https://jobicy.com/api/v2/remote-jobs?get=industries).
 
 | Integration | Technology | Setup | Use case |
 | --- | --- | --- | --- |
