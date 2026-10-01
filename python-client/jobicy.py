@@ -4,19 +4,21 @@ from dataclasses import asdict, dataclass
 from html import unescape
 from math import isfinite
 import re
-from typing import Any
+from typing import Any, Iterator
 from urllib.parse import urlsplit
 
 import requests
 
 
 class JobicyError(Exception):
-    pass
+    def __init__(self, message: str, status: int | None = None) -> None:
+        super().__init__(message)
+        self.status = status
 
 
 class JobicyRateLimitError(JobicyError):
     def __init__(self, message: str, retry_after_seconds: int | None = None) -> None:
-        super().__init__(message)
+        super().__init__(message, status=429)
         self.retry_after_seconds = retry_after_seconds
 
 
@@ -68,7 +70,7 @@ class Job:
             url=str(payload["url"]),
             job_title=text("jobTitle") or "Remote opportunity",
             company_name=text("companyName") or "Company not specified",
-            company_logo=text("companyLogo") or None,
+            company_logo=(text("companyLogo") or None) if isinstance(payload.get("companyLogo"), str) else None,
             industries=labels("jobIndustry"),
             job_types=labels("jobType"),
             location=text("jobGeo") or "Location not specified",
@@ -100,6 +102,13 @@ class Job:
         return asdict(self)
 
 
+@dataclass(frozen=True, slots=True)
+class JobPage:
+    jobs: list[Job]
+    next_cursor: str | None
+    has_more: bool
+
+
 class JobicyClient:
     api_url = "https://jobicy.com/api/v2/remote-jobs"
 
@@ -121,10 +130,58 @@ class JobicyClient:
         industry: str | None = None,
         tag: str | None = None,
     ) -> list[Job]:
-        if isinstance(count, bool) or not isinstance(count, int) or not 1 <= count <= 100:
-            raise ValueError("count must be an integer between 1 and 100")
+        return self.get_jobs_page(count, geo, industry, tag).jobs
+
+    def iter_jobs(
+        self,
+        count: int = 50,
+        geo: str | None = None,
+        industry: str | None = None,
+        tag: str | None = None,
+        cursor: str | None = None,
+    ) -> Iterator[Job]:
+        cursors = {cursor} if cursor else set()
+        ids: set[str] = set()
+        while True:
+            page = self.get_jobs_page(count, geo, industry, tag, cursor)
+            for job in page.jobs:
+                identifier = str(job.id)
+                if identifier not in ids:
+                    ids.add(identifier)
+                    yield job
+            cursor = page.next_cursor
+            if cursor is None:
+                break
+            if cursor in cursors:
+                raise JobicyError("Jobicy returned a repeated cursor")
+            cursors.add(cursor)
+
+    def get_all_jobs(
+        self,
+        count: int = 50,
+        geo: str | None = None,
+        industry: str | None = None,
+        tag: str | None = None,
+        cursor: str | None = None,
+    ) -> list[Job]:
+        return list(self.iter_jobs(count, geo, industry, tag, cursor))
+
+    def get_jobs_page(
+        self,
+        count: int = 50,
+        geo: str | None = None,
+        industry: str | None = None,
+        tag: str | None = None,
+        cursor: str | None = None,
+    ) -> JobPage:
+        if isinstance(count, bool) or not isinstance(count, int) or not 1 <= count <= 200:
+            raise ValueError("count must be an integer between 1 and 200")
 
         parameters: dict[str, str | int] = {"count": count}
+        if cursor is not None:
+            if not isinstance(cursor, str) or not cursor:
+                raise ValueError("cursor must be a nonempty string or None")
+            parameters["cursor"] = cursor
 
         for name, value in (("geo", geo), ("industry", industry), ("tag", tag)):
             if value is None:
@@ -147,7 +204,7 @@ class JobicyClient:
             raise JobicyRateLimitError("Jobicy temporarily rate limited the request", retry_after)
 
         if not response.ok:
-            raise JobicyError(f"Jobicy API returned HTTP {response.status_code}")
+            raise JobicyError(f"Jobicy API returned HTTP {response.status_code}", status=response.status_code)
 
         try:
             payload = response.json()
@@ -163,7 +220,10 @@ class JobicyClient:
             if not isinstance(item, dict) or item.get("id") is None or not isinstance(item.get("url"), str):
                 continue
 
-            parsed_url = urlsplit(item["url"])
+            try:
+                parsed_url = urlsplit(item["url"])
+            except ValueError:
+                continue
             if parsed_url.scheme != "https" or parsed_url.hostname != "jobicy.com":
                 continue
 
@@ -174,7 +234,14 @@ class JobicyClient:
 
             unique[str(job.id)] = job
 
-        return list(unique.values())
+        next_cursor = payload.get("nextCursor")
+        if ("nextCursor" not in payload or
+            (next_cursor is not None and (not isinstance(next_cursor, str) or not next_cursor)) or
+            not isinstance(payload.get("hasMore"), bool) or
+            payload["hasMore"] != (next_cursor is not None)):
+            raise JobicyError("Jobicy API returned invalid pagination metadata")
+
+        return JobPage(list(unique.values()), next_cursor, payload["hasMore"])
 
     def close(self) -> None:
         self.session.close()

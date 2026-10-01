@@ -19,8 +19,8 @@ if (!token || !chatId) {
   process.exit(1);
 }
 
-const rawInterval = Number.parseInt(process.env.CHECK_INTERVAL_SECONDS || "300", 10);
-const intervalSeconds = Math.max(60, Number.isFinite(rawInterval) ? rawInterval : 300);
+const rawInterval = Number.parseInt(process.env.CHECK_INTERVAL_SECONDS || "3600", 10);
+const intervalSeconds = Math.max(3600, Number.isFinite(rawInterval) ? rawInterval : 3600);
 const directory = path.dirname(fileURLToPath(import.meta.url));
 const store = new SeenJobStore(path.join(directory, "..", "data", "seen-jobs.json"));
 let timer;
@@ -33,6 +33,8 @@ async function checkJobs() {
     keywords: process.env.JOBICY_KEYWORDS || "",
     project: "telegram-bot"
   });
+
+  await store.retain(jobs);
 
   if (!store.initialized) {
     await store.baseline(jobs);

@@ -2,9 +2,8 @@ import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 export class SeenJobStore {
-  constructor(filePath, maximumEntries = 2_000) {
+  constructor(filePath) {
     this.filePath = filePath;
-    this.maximumEntries = maximumEntries;
     this.ids = new Set();
     this.initialized = false;
     this.writeQueue = Promise.resolve();
@@ -18,7 +17,7 @@ export class SeenJobStore {
       const payload = JSON.parse(contents);
 
       if (payload && Array.isArray(payload.ids)) {
-        this.ids = new Set(payload.ids.map(String).slice(-this.maximumEntries));
+        this.ids = new Set(payload.ids.map(String));
         this.initialized = payload.initialized === true;
         return;
       }
@@ -40,19 +39,17 @@ export class SeenJobStore {
   async remember(id) {
     this.ids.add(String(id));
 
-    while (this.ids.size > this.maximumEntries) {
-      this.ids.delete(this.ids.values().next().value);
-    }
+    await this.save();
+  }
 
+  async retain(jobs) {
+    const currentIds = new Set(jobs.map((job) => String(job.id)));
+    this.ids = new Set([...this.ids].filter((id) => currentIds.has(id)));
     await this.save();
   }
 
   async baseline(jobs) {
-    for (const job of jobs) this.ids.add(String(job.id));
-
-    while (this.ids.size > this.maximumEntries) {
-      this.ids.delete(this.ids.values().next().value);
-    }
+    this.ids = new Set(jobs.map((job) => String(job.id)));
 
     this.initialized = true;
     await this.save();

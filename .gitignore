@@ -1,0 +1,12 @@
+node_modules/
+.next/
+.env
+.env.*
+!.env.example
+.venv/
+__pycache__/
+*.pyc
+*.tsbuildinfo
+*/data/
+jobs.json
+jobs.csv

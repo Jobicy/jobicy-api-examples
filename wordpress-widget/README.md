@@ -18,12 +18,16 @@ A self-contained WordPress plugin that renders cached Jobicy remote jobs using a
 
 | Attribute | Default | Meaning |
 | --- | --- | --- |
-| `count` | `10` | Number of jobs, clamped to the API range of 1–100 |
+| `count` | `10` | Number of jobs, clamped to the widget display range of 1–100 |
 | `geo` | Empty | Official Jobicy location slug |
 | `industry` | Empty | Official Jobicy category slug |
 | `tag` | Empty | Official Jobicy keyword search |
 
 Discover current [location slugs](https://jobicy.com/api/v2/remote-jobs?get=locations) and [industry slugs](https://jobicy.com/api/v2/remote-jobs?get=industries).
+
+The widget intentionally requests one page of recent listings; it does not crawl the entire seven-day feed. The API allows up to 200 jobs per page and supports cursors for full-feed integrations.
+
+[OpenAPI JSON](https://jobicy.com/api/openapi.json) · [OpenAPI YAML](https://jobicy.com/api/openapi.yaml)
 
 Requests use the WordPress HTTP API with a 12-second timeout. Successful responses are cached with WordPress transients for one hour, and a separate 24-hour stale cache is used if Jobicy becomes temporarily unavailable. Input is sanitized, displayed values are escaped, duplicate IDs are removed, canonical Jobicy URLs are validated, and no direct database calls are used.
 

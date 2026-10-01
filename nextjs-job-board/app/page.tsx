@@ -1,9 +1,8 @@
 import JobCard from "@/components/JobCard";
 import JobFilters from "@/components/JobFilters";
-import Pagination from "@/components/Pagination";
-import { fetchJobicyJobs } from "@/lib/jobicy";
-
-const PAGE_SIZE = 12;
+import Pagination, { pageHref } from "@/components/Pagination";
+import { fetchJobicyPage, JobicyCursorError } from "@/lib/jobicy";
+import type { JobicyPage } from "@/types/job";
 
 type SearchParameters = { [key: string]: string | string[] | undefined };
 
@@ -16,11 +15,18 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
   const keyword = first(parameters.q);
   const geo = first(parameters.geo);
   const industry = first(parameters.industry);
-  const requestedPage = Number.parseInt(first(parameters.page) || "1", 10);
-  const jobs = await fetchJobicyJobs({ keyword, geo, industry });
-  const totalPages = Math.max(1, Math.ceil(jobs.length / PAGE_SIZE));
-  const currentPage = Math.min(totalPages, Math.max(1, Number.isFinite(requestedPage) ? requestedPage : 1));
-  const visibleJobs = jobs.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  const rawCursor = Array.isArray(parameters.cursor) ? parameters.cursor[0] : parameters.cursor;
+  const cursor = rawCursor || undefined;
+  let page: JobicyPage = { jobs: [], nextCursor: null, hasMore: false };
+  let cursorError = "";
+  try {
+    if (cursor && cursor.length > 2048) throw new JobicyCursorError("This listing page is invalid. Start again from the latest listings.");
+    page = await fetchJobicyPage({ keyword, geo, industry }, cursor);
+  } catch (error) {
+    if (!(error instanceof JobicyCursorError)) throw error;
+    cursorError = error.message;
+  }
+  const { jobs, nextCursor } = page;
 
   return (
     <main className="shell">
@@ -40,11 +46,17 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
       <section className="results" aria-labelledby="results-heading">
         <div className="results__heading">
           <h2 id="results-heading">Latest opportunities</h2>
-          <span>{jobs.length} {jobs.length === 1 ? "listing" : "listings"}</span>
+          <span>{jobs.length} {jobs.length === 1 ? "listing" : "listings"} on this page</span>
         </div>
 
-        {visibleJobs.length ? (
-          <div className="job-list">{visibleJobs.map((job) => <JobCard key={job.id} job={job} />)}</div>
+        {cursorError ? (
+          <div className="empty-state">
+            <h3>Start a fresh search.</h3>
+            <p>{cursorError}</p>
+            <a href={pageHref(null, { keyword, geo, industry })}>Latest listings</a>
+          </div>
+        ) : jobs.length ? (
+          <div className="job-list">{jobs.map((job) => <JobCard key={job.id} job={job} />)}</div>
         ) : (
           <div className="empty-state">
             <h3>No matching jobs right now.</h3>
@@ -53,7 +65,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
           </div>
         )}
 
-        <Pagination currentPage={currentPage} totalPages={totalPages} keyword={keyword} geo={geo} industry={industry} />
+        {!cursorError && <Pagination nextCursor={nextCursor} isContinuation={Boolean(cursor)} keyword={keyword} geo={geo} industry={industry} />}
       </section>
 
       <footer className="footer">

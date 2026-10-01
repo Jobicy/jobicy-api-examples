@@ -17,13 +17,48 @@ export class JobicyClient {
     this.apiUrl = "https://jobicy.com/api/v2/remote-jobs";
   }
 
-  async getJobs({ count = 50, geo = "", industry = "", tag = "" } = {}) {
-    if (!Number.isInteger(count) || count < 1 || count > 100) {
-      throw new RangeError("count must be an integer between 1 and 100");
+  async getJobs(options = {}) {
+    return (await this.getJobsPage(options)).jobs;
+  }
+
+  async *iterJobs(options = {}) {
+    const filters = { ...options };
+    let cursor = filters.cursor ?? null;
+    const cursors = new Set(cursor ? [cursor] : []);
+    const ids = new Set();
+
+    do {
+      const page = await this.getJobsPage({ ...filters, cursor });
+      for (const job of page.jobs) {
+        const id = String(job.id);
+        if (ids.has(id)) continue;
+        ids.add(id);
+        yield job;
+      }
+      cursor = page.nextCursor;
+      if (cursor && cursors.has(cursor)) throw new JobicyError("Jobicy returned a repeated cursor");
+      if (cursor) cursors.add(cursor);
+    } while (cursor);
+  }
+
+  async getAllJobs(options = {}) {
+    const jobs = [];
+    for await (const job of this.iterJobs(options)) jobs.push(job);
+    return jobs;
+  }
+
+  async getJobsPage({ count = 50, geo = "", industry = "", tag = "", cursor = null } = {}) {
+    if (!Number.isInteger(count) || count < 1 || count > 200) {
+      throw new RangeError("count must be an integer between 1 and 200");
     }
 
     const url = new URL(this.apiUrl);
     url.searchParams.set("count", String(count));
+
+    if (cursor !== null) {
+      if (typeof cursor !== "string" || !cursor.length) throw new TypeError("cursor must be a nonempty string or null");
+      url.searchParams.set("cursor", cursor);
+    }
 
     for (const [name, value] of Object.entries({ geo, industry, tag })) {
       if (typeof value !== "string") throw new TypeError(`${name} must be a string`);
@@ -80,7 +115,13 @@ export class JobicyClient {
       unique.set(String(job.id), job);
     }
 
-    return [...unique.values()];
+    const nextCursor = payload.nextCursor;
+    if ((nextCursor !== null && (typeof nextCursor !== "string" || !nextCursor.length)) ||
+        typeof payload.hasMore !== "boolean" || payload.hasMore !== (nextCursor !== null)) {
+      throw new JobicyError("Jobicy API returned invalid pagination metadata");
+    }
+
+    return { jobs: [...unique.values()], nextCursor, hasMore: payload.hasMore };
   }
 }
 

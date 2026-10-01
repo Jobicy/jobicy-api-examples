@@ -33,10 +33,20 @@ To avoid publishing old jobs after setup, establish your initial ID baseline bef
 
 For local keyword filtering, canonical URL validation, duplicate removal, and normalized line-item output, use **Code by Zapier → Run JavaScript** instead of the Webhooks step:
 
-1. Create input fields named `count`, `geo`, `industry`, `tag`, and `keywords`.
+1. Create input fields named `count`, `geo`, `industry`, `tag`, `keywords`, and optional `cursor`.
 2. Use values such as `50`, `usa`, `engineering`, `python`, and `backend,platform`; leave optional fields blank.
 3. Paste the complete contents of `code-step.js` into the JavaScript editor.
 4. Map `ids`, `titles`, `companies`, `locations`, `excerpts`, and `urls` into **Looping by Zapier**.
 5. Use Storage by Zapier to persist sent IDs, then publish to the destination.
+
+## Cursor continuation
+
+Both the Webhooks step and `code-step.js` request **one API page** per invocation; looping over jobs is not pagination. Counts range from 1 to 200 per page. The code returns `nextCursor` (an empty string when complete) and `hasMore` along with the normalized jobs. It passes a supplied cursor unchanged using URL encoding and continues exposing the cursor even when local filtering finds no matches.
+
+For complete seven-day synchronization, configure an orchestrated continuation that invokes the request step again with `nextCursor` and the same filters until `hasMore` is false. Advance a stored continuation only after processing the current page, retain delivered IDs separately, and clear the cursor at completion. Establish a silent baseline across all pages before enabling delivery. Keep traversal guards and Zapier task/time limits in mind; this example deliberately does not run an unbounded fetch loop inside a Code step. For an importable full-feed workflow, use [n8n](../n8n/), or use the [Node client](../node-client/) in a backend.
+
+Start new traversals hourly or less often. A cursor expires after 24 hours; on HTTP 400 restart without it while retaining delivered IDs. HTTP 429 requires deferred retry. Retain IDs while their jobs remain in the seven-day window to avoid reposting jobs dropped by a fixed count cap.
+
+[OpenAPI JSON](https://jobicy.com/api/openapi.json) · [OpenAPI YAML](https://jobicy.com/api/openapi.yaml)
 
 The code performs a real HTTP request, validates the `jobs` array, rejects non-Jobicy URLs, handles malformed JSON and HTTP failures, and does not fabricate API data. Keep webhook URLs, destination tokens, and account connections in Zapier's secret or connection settings.

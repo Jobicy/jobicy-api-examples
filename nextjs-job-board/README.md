@@ -14,6 +14,7 @@ Open [http://localhost:3000](http://localhost:3000). Node.js 20.9 or newer is re
 
 ```bash
 npm run typecheck
+npm test
 npm run build
 npm start
 ```
@@ -22,7 +23,9 @@ npm start
 
 Use the keyword, location slug, and industry slug fields. The application forwards these as the official Jobicy API `tag`, `geo`, and `industry` query parameters. Discover current [location slugs](https://jobicy.com/api/v2/remote-jobs?get=locations) and [industry slugs](https://jobicy.com/api/v2/remote-jobs?get=industries).
 
-One API response contains at most 100 jobs. The application deduplicates listing IDs, renders 12 jobs per page, and paginates that response locally. Filter and page state live in shareable URL query parameters. Upstream responses are cached and revalidated once per hour.
+The application requests `count=12` from Jobicy and renders that API page. **Older listings** passes the opaque `nextCursor` as `cursor`, retaining the filters; **Latest listings** starts a fresh traversal. It shows the number of listings on the current page without inventing a total page count. Filter and cursor state live in URL query parameters. Cursors expire after 24 hours; an HTTP 400 continuation shows a restart link retaining the filters. The feed includes only the last seven days. Upstream responses are cached and revalidated once per hour.
+
+[OpenAPI JSON](https://jobicy.com/api/openapi.json) · [OpenAPI YAML](https://jobicy.com/api/openapi.yaml)
 
 Each card displays the employer, optional logo, remote location, employment type, categories, publication date, optional salary, short excerpt, and canonical Jobicy URL. HTML-bearing descriptions are not rendered or republished. Separate loading, empty, and error states remain accessible on narrow screens.
 

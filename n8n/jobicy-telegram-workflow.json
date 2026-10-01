@@ -28,7 +28,7 @@
             {
               "id": "235f8b41-75d6-4e79-a8dc-7b72ea1a1001",
               "name": "count",
-              "value": 50,
+              "value": 100,
               "type": "number"
             },
             {
@@ -96,7 +96,18 @@
           ]
         },
         "options": {
-          "timeout": 15000
+          "timeout": 15000,
+          "pagination": {
+            "pagination": {
+              "paginationMode": "responseContainsNextURL",
+              "nextURL": "={{ (() => { const config = $(\"Configure filters\").first().json; const parts = [\"count=\" + encodeURIComponent(config.count)]; for (const key of [\"geo\", \"industry\"]) { if (String(config[key] || \"\").trim()) parts.push(key + \"=\" + encodeURIComponent(String(config[key]).trim())); } parts.push(\"cursor=\" + encodeURIComponent($response.body.nextCursor)); return \"https://jobicy.com/api/v2/remote-jobs?\" + parts.join(\"&\"); })() }}",
+              "paginationCompleteWhen": "other",
+              "completeExpression": "={{ !$response.body.nextCursor }}",
+              "limitPagesFetched": true,
+              "maxRequests": 100,
+              "requestInterval": 200
+            }
+          }
         }
       },
       "id": "5d8791c0-6127-47d2-b7ec-25b8880c3003",
@@ -110,7 +121,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const source = $input.first().json;\n\nif (!source || !Array.isArray(source.jobs)) {\n  throw new Error(\"Jobicy response does not contain a jobs array\");\n}\n\nconst seen = new Set();\nconst result = [];\n\nfor (const job of source.jobs) {\n  if (!job || typeof job !== \"object\" || job.id == null || typeof job.url !== \"string\") continue;\n\n  let parsed;\n\n  try {\n    parsed = new URL(job.url);\n  } catch {\n    continue;\n  }\n\n  if (parsed.protocol !== \"https:\" || parsed.hostname !== \"jobicy.com\") continue;\n\n  const id = String(job.id);\n  if (seen.has(id)) continue;\n  seen.add(id);\n  result.push({ json: job });\n}\n\nreturn result;"
+        "jsCode": "const pages = $input.all();\nconst seen = new Set();\nconst cursors = new Set();\nconst result = [];\n\nfor (const { json: source } of pages) {\n  if (!source || !Array.isArray(source.jobs)) throw new Error(\"Jobicy response does not contain a jobs array\");\n  const cursor = source.nextCursor;\n  if ((cursor !== null && (typeof cursor !== \"string\" || !cursor.length)) ||\n      typeof source.hasMore !== \"boolean\" || source.hasMore !== (cursor !== null)) {\n    throw new Error(\"Jobicy returned invalid pagination metadata\");\n  }\n  if (cursor && cursors.has(cursor)) throw new Error(\"Jobicy returned a repeated cursor\");\n  if (cursor) cursors.add(cursor);\n  for (const job of source.jobs) {\n    if (!job || typeof job !== \"object\" || job.id == null || typeof job.url !== \"string\") continue;\n  \n    let parsed;\n  \n    try {\n      parsed = new URL(job.url);\n    } catch {\n      continue;\n    }\n  \n    if (parsed.protocol !== \"https:\" || parsed.hostname !== \"jobicy.com\") continue;\n  \n    const id = String(job.id);\n    if (seen.has(id)) continue;\n    seen.add(id);\n    result.push({ json: job });\n  }\n  \n}\n\nif (pages.length && pages[pages.length - 1].json.nextCursor !== null) {\n  throw new Error(\"Pagination safety limit reached; increase maxRequests before retrying. No baseline or delivery was performed.\");\n}\n\nreturn result;"
       },
       "id": "5d8791c0-6127-47d2-b7ec-25b8880c3004",
       "name": "Extract jobs",
@@ -136,7 +147,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const state = $getWorkflowStaticData(\"global\");\nconst maximum = 2000;\nconst items = $input.all();\nconst previous = new Set(Array.isArray(state.jobIds) ? state.jobIds.map(String) : []);\n\nif (state.initialized !== true) {\n  state.jobIds = items.map((item) => String(item.json.id)).slice(-maximum);\n  state.initialized = true;\n  return [];\n}\n\nconst fresh = [];\n\nfor (const item of [...items].reverse()) {\n  const id = String(item.json.id);\n  if (previous.has(id)) continue;\n  previous.add(id);\n\n  const escapeHtml = (value) => String(value ?? \"\")\n    .replace(/&/g, \"&amp;\")\n    .replace(/</g, \"&lt;\")\n    .replace(/>/g, \"&gt;\")\n    .replace(/\"/g, \"&quot;\");\n  const title = escapeHtml(item.json.jobTitle || \"Remote opportunity\");\n  const company = escapeHtml(item.json.companyName || \"Company not specified\");\n  const location = escapeHtml(item.json.jobGeo || \"Location not specified\");\n  const excerpt = escapeHtml(String(item.json.jobExcerpt || \"\").slice(0, 420));\n  const url = escapeHtml(item.json.url);\n  const lines = [`<b>${title}</b>`, `Company: ${company}`, `Location: ${location}`];\n\n  if (excerpt) lines.push(\"\", excerpt);\n  lines.push(\"\", `<a href=\"${url}\">View job on Jobicy</a>`, `<a href=\"https://jobicy.com/\">Jobs powered by Jobicy</a>`);\n  fresh.push({ json: { ...item.json, telegramMessage: lines.join(\"\\n\") } });\n}\n\nstate.jobIds = [...previous].slice(-maximum);\nreturn fresh;"
+        "jsCode": "const state = $getWorkflowStaticData(\"global\");\nconst items = $input.all();\nconst activeIds = new Set(items.map((item) => String(item.json.id)));\nconst previous = new Set((Array.isArray(state.jobIds) ? state.jobIds.map(String) : []).filter((id) => activeIds.has(id)));\n\nif (state.initialized !== true) {\n  state.jobIds = items.map((item) => String(item.json.id));\n  state.initialized = true;\n  return [];\n}\n\nconst fresh = [];\n\nfor (const item of [...items].reverse()) {\n  const id = String(item.json.id);\n  if (previous.has(id)) continue;\n  previous.add(id);\n\n  const escapeHtml = (value) => String(value ?? \"\")\n    .replace(/&/g, \"&amp;\")\n    .replace(/</g, \"&lt;\")\n    .replace(/>/g, \"&gt;\")\n    .replace(/\"/g, \"&quot;\");\n  const title = escapeHtml(item.json.jobTitle || \"Remote opportunity\");\n  const company = escapeHtml(item.json.companyName || \"Company not specified\");\n  const location = escapeHtml(item.json.jobGeo || \"Location not specified\");\n  const excerpt = escapeHtml(String(item.json.jobExcerpt || \"\").slice(0, 420));\n  const url = escapeHtml(item.json.url);\n  const lines = [`<b>${title}</b>`, `Company: ${company}`, `Location: ${location}`];\n\n  if (excerpt) lines.push(\"\", excerpt);\n  lines.push(\"\", `<a href=\"${url}\">View job on Jobicy</a>`, `<a href=\"https://jobicy.com/\">Jobs powered by Jobicy</a>`);\n  fresh.push({ json: { ...item.json, telegramMessage: lines.join(\"\\n\") } });\n}\n\nstate.jobIds = [...previous];\nreturn fresh;"
       },
       "id": "5d8791c0-6127-47d2-b7ec-25b8880c3006",
       "name": "Deduplicate and format",

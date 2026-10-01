@@ -20,7 +20,7 @@ def main() -> None:
 
     try:
         with JobicyClient() as client:
-            jobs = client.get_jobs(count=100, geo=arguments.geo)
+            jobs = client.get_all_jobs(count=100, geo=arguments.geo)
     except (JobicyError, ValueError) as error:
         print(f"Could not retrieve salary data: {error}", file=sys.stderr)
         raise SystemExit(1) from error

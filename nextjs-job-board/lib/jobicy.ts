@@ -1,10 +1,17 @@
-import type { JobicyJob, JobSearchFilters } from "@/types/job";
+import type { JobicyJob, JobicyPage, JobSearchFilters } from "@/types/job";
 
 const API_URL = "https://jobicy.com/api/v2/remote-jobs";
 
+export class JobicyCursorError extends Error {}
+
 export async function fetchJobicyJobs(filters: JobSearchFilters = {}): Promise<JobicyJob[]> {
+  return (await fetchJobicyPage(filters)).jobs;
+}
+
+export async function fetchJobicyPage(filters: JobSearchFilters = {}, cursor?: string): Promise<JobicyPage> {
   const url = new URL(API_URL);
-  url.searchParams.set("count", "100");
+  url.searchParams.set("count", "12");
+  if (cursor) url.searchParams.set("cursor", cursor);
 
   if (filters.geo?.trim()) url.searchParams.set("geo", filters.geo.trim());
   if (filters.industry?.trim()) url.searchParams.set("industry", filters.industry.trim());
@@ -26,6 +33,7 @@ export async function fetchJobicyJobs(filters: JobSearchFilters = {}): Promise<J
   }
 
   if (!response.ok) {
+    if (response.status === 400 && cursor) throw new JobicyCursorError("This listing page has expired or its filters have changed. Start again from the latest listings.");
     const message = response.status === 429
       ? "Jobicy is temporarily rate limiting requests. Please try again later."
       : `Jobicy returned HTTP ${response.status}.`;
@@ -60,7 +68,16 @@ export async function fetchJobicyJobs(filters: JobSearchFilters = {}): Promise<J
     unique.set(String(candidate.id), candidate as JobicyJob);
   }
 
-  return [...unique.values()];
+  if (!("nextCursor" in payload) || !("hasMore" in payload)) {
+    throw new Error("Jobicy returned no pagination metadata.");
+  }
+  const nextCursor = payload.nextCursor;
+  if ((nextCursor !== null && (typeof nextCursor !== "string" || !nextCursor.length)) ||
+      typeof payload.hasMore !== "boolean" || payload.hasMore !== (nextCursor !== null)) {
+    throw new Error("Jobicy returned invalid pagination metadata.");
+  }
+
+  return { jobs: [...unique.values()], nextCursor, hasMore: payload.hasMore };
 }
 
 export function readableText(value: unknown): string {

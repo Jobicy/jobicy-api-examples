@@ -11,7 +11,7 @@ from jobicy import JobicyClient, JobicyError
 def main() -> None:
     parser = argparse.ArgumentParser(description="Export current Jobicy jobs to a CSV file.")
     parser.add_argument("--output", default="jobs.csv", help="CSV output path")
-    parser.add_argument("--count", type=int, default=50, help="Jobs to request, from 1 through 100")
+    parser.add_argument("--count", type=int, default=50, help="Jobs per page, from 1 through 200; exports all available pages")
     parser.add_argument("--geo", default="")
     parser.add_argument("--industry", default="")
     parser.add_argument("--tag", default="")
@@ -19,7 +19,7 @@ def main() -> None:
 
     try:
         with JobicyClient() as client:
-            jobs = client.get_jobs(arguments.count, arguments.geo, arguments.industry, arguments.tag)
+            jobs = client.get_all_jobs(arguments.count, arguments.geo, arguments.industry, arguments.tag)
     except (JobicyError, ValueError) as error:
         print(f"Could not export jobs: {error}", file=sys.stderr)
         raise SystemExit(1) from error
