@@ -32,3 +32,7 @@ The widget intentionally requests one page of recent listings; it does not crawl
 Requests use the WordPress HTTP API with a 12-second timeout. Successful responses are cached with WordPress transients for one hour, and a separate 24-hour stale cache is used if Jobicy becomes temporarily unavailable. Input is sanitized, displayed values are escaped, duplicate IDs are removed, canonical Jobicy URLs are validated, and no direct database calls are used.
 
 The plugin requires WordPress 6.0+ and PHP 7.4+. It preserves visible **[Jobs powered by Jobicy](https://jobicy.com/)** attribution and links every job to its original Jobicy listing.
+
+## Stored listings
+
+If you extend this integration to retain listings, use the [batch status endpoint](../README.md#check-stored-job-statuses) to check up to 100 IDs at a time. Older open jobs can remain `active` after leaving the seven-day feed. Do not mark jobs closed just because a fresh feed omits them, or because a check returns `unknown` or fails. The sample does not automatically reconcile stored listings.

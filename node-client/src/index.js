@@ -47,24 +47,7 @@ export class JobicyClient {
     return jobs;
   }
 
-  async getJobsPage({ count = 50, geo = "", industry = "", tag = "", cursor = null } = {}) {
-    if (!Number.isInteger(count) || count < 1 || count > 200) {
-      throw new RangeError("count must be an integer between 1 and 200");
-    }
-
-    const url = new URL(this.apiUrl);
-    url.searchParams.set("count", String(count));
-
-    if (cursor !== null) {
-      if (typeof cursor !== "string" || !cursor.length) throw new TypeError("cursor must be a nonempty string or null");
-      url.searchParams.set("cursor", cursor);
-    }
-
-    for (const [name, value] of Object.entries({ geo, industry, tag })) {
-      if (typeof value !== "string") throw new TypeError(`${name} must be a string`);
-      if (value.trim()) url.searchParams.set(name, value.trim());
-    }
-
+  async request(url) {
     let response;
 
     try {
@@ -95,6 +78,60 @@ export class JobicyClient {
     } catch (error) {
       throw new JobicyError("Jobicy API returned invalid JSON", { cause: error });
     }
+
+    return payload;
+  }
+
+  async getJobStatuses(ids) {
+    if (!Array.isArray(ids) || ids.length < 1 || ids.length > 100) {
+      throw new RangeError("ids must contain between 1 and 100 job IDs");
+    }
+    const normalized = [...new Set(ids.map((id) => {
+      if (typeof id !== "number" && typeof id !== "string") throw new TypeError("Each job ID must be a positive integer");
+      const value = String(id).trim();
+      const number = Number(value);
+      if (!/^[1-9][0-9]*$/.test(value) || !Number.isSafeInteger(number)) {
+        throw new RangeError("Each job ID must be a positive safe integer without leading zeros");
+      }
+      return number;
+    }))];
+    const url = new URL(`${this.apiUrl}/status`);
+    url.searchParams.set("ids", normalized.join(","));
+    const payload = await this.request(url);
+    if (!payload || payload.success !== true || payload.count !== normalized.length || !Array.isArray(payload.jobs)) {
+      throw new JobicyError("Jobicy API returned an invalid status response");
+    }
+    const requested = new Set(normalized);
+    const result = new Map();
+    for (const item of payload.jobs) {
+      if (!item || !requested.has(item.id) || result.has(item.id) || !["active", "closed", "unknown"].includes(item.status)) {
+        throw new JobicyError("Jobicy API returned an invalid status record");
+      }
+      result.set(item.id, { id: item.id, status: item.status });
+    }
+    if (result.size !== normalized.length) throw new JobicyError("Jobicy API returned an incomplete status response");
+    return normalized.map((id) => result.get(id));
+  }
+
+  async getJobsPage({ count = 50, geo = "", industry = "", tag = "", cursor = null } = {}) {
+    if (!Number.isInteger(count) || count < 1 || count > 200) {
+      throw new RangeError("count must be an integer between 1 and 200");
+    }
+
+    const url = new URL(this.apiUrl);
+    url.searchParams.set("count", String(count));
+
+    if (cursor !== null) {
+      if (typeof cursor !== "string" || !cursor.length) throw new TypeError("cursor must be a nonempty string or null");
+      url.searchParams.set("cursor", cursor);
+    }
+
+    for (const [name, value] of Object.entries({ geo, industry, tag })) {
+      if (typeof value !== "string") throw new TypeError(`${name} must be a string`);
+      if (value.trim()) url.searchParams.set(name, value.trim());
+    }
+
+    const payload = await this.request(url);
 
     if (!payload || !Array.isArray(payload.jobs)) {
       throw new JobicyError("Jobicy API response does not contain a jobs array");

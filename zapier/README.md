@@ -50,3 +50,7 @@ Start new traversals hourly or less often. A cursor expires after 24 hours; on H
 [OpenAPI JSON](https://jobicy.com/api/openapi.json) · [OpenAPI YAML](https://jobicy.com/api/openapi.yaml)
 
 The code performs a real HTTP request, validates the `jobs` array, rejects non-Jobicy URLs, handles malformed JSON and HTTP failures, and does not fabricate API data. Keep webhook URLs, destination tokens, and account connections in Zapier's secret or connection settings.
+
+## Stored listings
+
+If you extend this integration to retain listings, use the [batch status endpoint](../README.md#check-stored-job-statuses) to check up to 100 IDs at a time. Older open jobs can remain `active` after leaving the seven-day feed. Do not mark jobs closed just because a fresh feed omits them, or because a check returns `unknown` or fails. The sample does not automatically reconcile stored listings.

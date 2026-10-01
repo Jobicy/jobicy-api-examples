@@ -52,3 +52,7 @@ The client connects to the actual Jobicy endpoint, calls `listTools`, verifies t
 An AI agent can call `get_taxonomies` to discover valid location and industry slugs before calling `get_jobs` with optional `count`, `geo`, `industry`, and `tag` arguments. Display the original Jobicy job URLs and include **[Jobs powered by Jobicy](https://jobicy.com/)** wherever results appear.
 
 For current endpoint details and supported filters, see the [official Jobicy API and MCP documentation](https://jobicy.com/jobs-rss-feed).
+
+## Stored listings
+
+If you extend this integration to retain listings, use the [batch status endpoint](../README.md#check-stored-job-statuses) to check up to 100 IDs at a time. Older open jobs can remain `active` after leaving the seven-day feed. Do not mark jobs closed just because a fresh feed omits them, or because a check returns `unknown` or fails. The sample does not automatically reconcile stored listings.
