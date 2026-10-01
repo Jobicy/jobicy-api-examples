@@ -9,10 +9,11 @@
   },
   "exports": "./src/index.js",
   "scripts": {
-    "check": "node --check src/index.js && node --check examples/search.js && node --check examples/filter.js && node --check examples/export-json.js && node --check examples/pagination.js",
+    "check": "node --check src/index.js && node --check examples/search.js && node --check examples/filter.js && node --check examples/export-json.js && node --check examples/pagination.js && node --check examples/status.js",
     "example:search": "node examples/search.js",
     "example:filter": "node examples/filter.js",
     "example:export": "node examples/export-json.js",
-    "example:pagination": "node examples/pagination.js"
+    "example:pagination": "node examples/pagination.js",
+    "example:status": "node examples/status.js"
   }
 }

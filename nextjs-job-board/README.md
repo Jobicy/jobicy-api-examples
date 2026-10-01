@@ -30,3 +30,7 @@ The application requests `count=12` from Jobicy and renders that API page. **Old
 Each card displays the employer, optional logo, remote location, employment type, categories, publication date, optional salary, short excerpt, and canonical Jobicy URL. HTML-bearing descriptions are not rendered or republished. Separate loading, empty, and error states remain accessible on narrow screens.
 
 Every public interface includes **[Jobs powered by Jobicy](https://jobicy.com/)** attribution. Keep this attribution and the original listing URLs when adapting the project.
+
+## Stored listings
+
+If you extend this integration to retain listings, use the [batch status endpoint](../README.md#check-stored-job-statuses) to check up to 100 IDs at a time. Older open jobs can remain `active` after leaving the seven-day feed. Do not mark jobs closed just because a fresh feed omits them, or because a check returns `unknown` or fails. The sample does not automatically reconcile stored listings.

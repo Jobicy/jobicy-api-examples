@@ -77,6 +77,14 @@ Treat the cursor as opaque. It expires 24 hours after a traversal starts. HTTP 4
 
 Node.js and Python provide page methods and full-feed iterators. Bots traverse all pages before establishing a baseline or delivering jobs. The Next.js board requests one page for each navigation. The WordPress widget intentionally displays only a limited set of recent jobs. REST pagination does not imply cursor support in RSS or MCP tools.
 
+## Check stored job statuses
+
+`GET https://jobicy.com/api/v2/remote-jobs/status?ids=123456,123457,123458` checks up to 100 supplied IDs per request. Replace example IDs with IDs you have stored. Duplicate IDs are returned once in first-occurrence order. The response contains `checkedAt`, `count`, and `jobs: [{ id, status }]`.
+
+`active` means open, `closed` means expired or filled, and `unknown` means the record is missing or not exposed publicly. The check includes older jobs outside the seven-day feed window. Absence from the feed does not imply closure. Keep `unknown` and request failures separate from `closed`.
+
+Checks are free and require no key; a valid optional Bearer key adds `total_request_cost: 0`. Public results can be cached for 60 seconds. Split larger lists into batches, observe rate limits, and follow `Retry-After` on HTTP 429. Only `ids` is accepted; no cursor or feed filters apply. [Full status contract](https://github.com/Jobicy/remote-jobs-api#batch-status-check).
+
 ## Response fields
 
 The remote job API returns Jobicy-owned field names: `id`, `url`, `jobSlug`, `jobTitle`, `companyName`, `companyLogo`, `jobIndustry`, `jobType`, `jobGeo`, `jobLevel`, `jobExcerpt`, `jobDescription`, `pubDate`, `salaryMin`, `salaryMax`, `salaryCurrency`, and `salaryPeriod`. The response envelope includes `jobCount` (this page only), `lastUpdate`, `nextCursor`, and `hasMore`; it does not provide a total page count. Optional job values may be absent; `companyLogo` can be `false`. `jobIndustry` and `jobType` are arrays. Descriptions may contain HTML and must never be inserted as trusted markup.
@@ -92,8 +100,8 @@ Request no more than 200 jobs per page, filter server-side when possible, cache 
 ## Check the examples
 
 ```bash
-node --test tests/pagination.test.mjs
-python3 -m unittest discover -s tests -p 'test_python_pagination.py'
+node --test tests/*.test.mjs
+python3 -m unittest discover -s tests -p 'test_python_*.py'
 ```
 
 The Python check requires `python-client/requirements.txt`. These checks use mocked API responses and temporary bot state; they do not publish messages. Run the per-directory checks and the Next.js typecheck/build as described in each README.

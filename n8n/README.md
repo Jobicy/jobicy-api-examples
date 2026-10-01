@@ -31,3 +31,7 @@ Static data is saved only after a successful active workflow execution. If deliv
 The HTTP request uses the real Jobicy endpoint, documented filters, a 15-second timeout, and a project User-Agent. Each outgoing message escapes Telegram HTML and links to the canonical Jobicy URL. The default one-hour schedule follows Jobicy's published fair-use guidance.
 
 If no matching jobs exist, downstream nodes do not run. Network and HTTP errors fail the execution visibly in n8n rather than generating fabricated job data.
+
+## Stored listings
+
+If you extend this integration to retain listings, use the [batch status endpoint](../README.md#check-stored-job-statuses) to check up to 100 IDs at a time. Older open jobs can remain `active` after leaving the seven-day feed. Do not mark jobs closed just because a fresh feed omits them, or because a check returns `unknown` or fails. The sample does not automatically reconcile stored listings.

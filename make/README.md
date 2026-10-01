@@ -72,3 +72,7 @@ Add salary values only when supplied. Plain text avoids markup injection. Add th
 Connect your Slack workspace, select a channel, and map the same fields into a message. Keep `url` as the original clickable Jobicy listing. Configure an error handler for failed HTTP requests, invalid response parsing, destination errors, and HTTP 429. Honor `Retry-After` when surfaced.
 
 Make blueprints include internal module identifiers, account connections, and scenario-specific configuration. This repository intentionally supplies exact transferable settings instead of inventing an unverified blueprint that could not be imported safely.
+
+## Stored listings
+
+If you extend this integration to retain listings, use the [batch status endpoint](../README.md#check-stored-job-statuses) to check up to 100 IDs at a time. Older open jobs can remain `active` after leaving the seven-day feed. Do not mark jobs closed just because a fresh feed omits them, or because a check returns `unknown` or fails. The sample does not automatically reconcile stored listings.

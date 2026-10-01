@@ -4,7 +4,7 @@ from dataclasses import asdict, dataclass
 from html import unescape
 from math import isfinite
 import re
-from typing import Any, Iterator
+from typing import Any, Iterator, Literal
 from urllib.parse import urlsplit
 
 import requests
@@ -109,6 +109,12 @@ class JobPage:
     has_more: bool
 
 
+@dataclass(frozen=True, slots=True)
+class JobStatus:
+    id: int
+    status: Literal["active", "closed", "unknown"]
+
+
 class JobicyClient:
     api_url = "https://jobicy.com/api/v2/remote-jobs"
 
@@ -191,25 +197,7 @@ class JobicyClient:
             if value.strip():
                 parameters[name] = value.strip()
 
-        try:
-            response = self.session.get(self.api_url, params=parameters, timeout=self.timeout)
-        except requests.Timeout as error:
-            raise JobicyError(f"Jobicy request timed out after {self.timeout:g} seconds") from error
-        except requests.RequestException as error:
-            raise JobicyError(f"Jobicy request failed: {error}") from error
-
-        if response.status_code == 429:
-            retry_header = response.headers.get("Retry-After", "")
-            retry_after = int(retry_header) if retry_header.isdigit() else None
-            raise JobicyRateLimitError("Jobicy temporarily rate limited the request", retry_after)
-
-        if not response.ok:
-            raise JobicyError(f"Jobicy API returned HTTP {response.status_code}", status=response.status_code)
-
-        try:
-            payload = response.json()
-        except (ValueError, requests.RequestException) as error:
-            raise JobicyError("Jobicy API returned invalid JSON") from error
+        payload = self._request(self.api_url, parameters)
 
         if not isinstance(payload, dict) or not isinstance(payload.get("jobs"), list):
             raise JobicyError("Jobicy API response does not contain a jobs array")
@@ -242,6 +230,57 @@ class JobicyClient:
             raise JobicyError("Jobicy API returned invalid pagination metadata")
 
         return JobPage(list(unique.values()), next_cursor, payload["hasMore"])
+
+    def _request(self, endpoint: str, parameters: dict[str, str | int]) -> Any:
+        try:
+            response = self.session.get(endpoint, params=parameters, timeout=self.timeout)
+        except requests.Timeout as error:
+            raise JobicyError(f"Jobicy request timed out after {self.timeout:g} seconds") from error
+        except requests.RequestException as error:
+            raise JobicyError(f"Jobicy request failed: {error}") from error
+
+        if response.status_code == 429:
+            retry_header = response.headers.get("Retry-After", "")
+            retry_after = int(retry_header) if retry_header.isdigit() else None
+            raise JobicyRateLimitError("Jobicy temporarily rate limited the request", retry_after)
+
+        if not response.ok:
+            raise JobicyError(f"Jobicy API returned HTTP {response.status_code}", status=response.status_code)
+
+        try:
+            payload = response.json()
+        except (ValueError, requests.RequestException) as error:
+            raise JobicyError("Jobicy API returned invalid JSON") from error
+
+        return payload
+
+    def get_job_statuses(self, ids: list[int | str] | tuple[int | str, ...]) -> list[JobStatus]:
+        if not isinstance(ids, (list, tuple)) or not 1 <= len(ids) <= 100:
+            raise ValueError("ids must contain between 1 and 100 job IDs")
+        normalized: list[int] = []
+        for identifier in ids:
+            if isinstance(identifier, bool) or not isinstance(identifier, (int, str)):
+                raise ValueError("Each job ID must be a positive integer")
+            value = str(identifier).strip()
+            if not re.fullmatch(r"[1-9][0-9]{0,15}", value) or int(value) > 9007199254740991:
+                raise ValueError("Each job ID must be a positive safe integer without leading zeros")
+            number = int(value)
+            if number not in normalized:
+                normalized.append(number)
+        payload = self._request(self.api_url + "/status", {"ids": ",".join(map(str, normalized))})
+        if (not isinstance(payload, dict) or payload.get("success") is not True or
+            payload.get("count") != len(normalized) or not isinstance(payload.get("jobs"), list)):
+            raise JobicyError("Jobicy API returned an invalid status response")
+        result: dict[int, JobStatus] = {}
+        for item in payload["jobs"]:
+            if (not isinstance(item, dict) or isinstance(item.get("id"), bool) or
+                not isinstance(item.get("id"), int) or item["id"] not in normalized or
+                item["id"] in result or item.get("status") not in ("active", "closed", "unknown")):
+                raise JobicyError("Jobicy API returned an invalid status record")
+            result[item["id"]] = JobStatus(item["id"], item["status"])
+        if len(result) != len(normalized):
+            raise JobicyError("Jobicy API returned an incomplete status response")
+        return [result[identifier] for identifier in normalized]
 
     def close(self) -> None:
         self.session.close()

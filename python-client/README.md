@@ -52,6 +52,27 @@ with JobicyClient() as client:
 
 The feed covers the last seven days. Cursors expire after 24 hours; HTTP 400 requires a fresh traversal without a cursor and preserved delivery IDs. HTTP failures stop an export rather than returning a partial result. Start new automated traversals hourly or less often.
 
+## Check stored job statuses
+
+`GET https://jobicy.com/api/v2/remote-jobs/status?ids=123456,123457,123458` checks up to 100 supplied IDs per request. Replace example IDs with IDs you have stored. Duplicate IDs are returned once in first-occurrence order. The response contains `checkedAt`, `count`, and `jobs: [{ id, status }]`.
+
+`active` means open, `closed` means expired or filled, and `unknown` means the record is missing or not exposed publicly. The check includes older jobs outside the seven-day feed window. Absence from the feed does not imply closure. Keep `unknown` and request failures separate from `closed`.
+
+Checks are free and require no key; a valid optional Bearer key adds `total_request_cost: 0`. Public results can be cached for 60 seconds. Split larger lists into batches, observe rate limits, and follow `Retry-After` on HTTP 429. Only `ids` is accepted; no cursor or feed filters apply. [Full status contract](https://github.com/Jobicy/remote-jobs-api#batch-status-check).
+
+```python
+with JobicyClient() as client:
+    statuses = client.get_job_statuses([123456, 123457, 123458])
+for item in statuses:
+    print(item.id, item.status)
+```
+
+```bash
+python examples/check_status.py 123456,123457,123458
+```
+
+`get_job_statuses()` returns ordered `JobStatus` dataclass instances. It validates the batch and rejects incomplete, duplicate, or malformed response records. HTTP errors remain `JobicyError` or `JobicyRateLimitError`; the client does not silently turn failures into closed jobs.
+
 [OpenAPI JSON](https://jobicy.com/api/openapi.json) · [OpenAPI YAML](https://jobicy.com/api/openapi.yaml)
 
 `export_csv.py` traverses all pages and writes a real UTF-8 CSV file. Its `--count` controls page size. The salary example traverses the available feed, excludes jobs without disclosed compensation and compares only the requested currency and pay period. The digest writes readable text suitable for a scheduled newsletter pipeline.
