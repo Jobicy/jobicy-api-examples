@@ -4,7 +4,7 @@ const keywords = process.argv.slice(2).join(" ").split(",").map((term) => term.t
 const activeKeywords = keywords.length ? keywords : ["python", "backend"];
 
 try {
-  const jobs = await new JobicyClient().getJobs({ count: 100 });
+  const jobs = await new JobicyClient().getAllJobs({ count: 100 });
   const matches = jobs.filter((job) => {
     const text = [job.jobTitle, job.companyName, job.jobExcerpt, ...(Array.isArray(job.jobIndustry) ? job.jobIndustry : [])]
       .filter(Boolean)

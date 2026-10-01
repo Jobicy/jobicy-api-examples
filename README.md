@@ -7,11 +7,12 @@ Production-ready examples for integrating Jobicy remote jobs into websites, appl
 ## Data sources
 
 - [Jobs API](https://jobicy.com/api/v2/remote-jobs)
+- [OpenAPI JSON](https://jobicy.com/api/openapi.json) · [OpenAPI YAML](https://jobicy.com/api/openapi.yaml)
 - [RSS feed](https://jobicy.com/jobs/feed)
 - [MCP endpoint](https://jobicy.com/mcp)
 - [Official API, RSS, and MCP documentation](https://jobicy.com/jobs-rss-feed)
 
-The public jobs API accepts `count` from 1 through 200, plus optional `geo`, `industry`, and `tag` query parameters. Successful responses contain a `jobs` array. Discover valid current filter slugs with [`?get=locations`](https://jobicy.com/api/v2/remote-jobs?get=locations) and [`?get=industries`](https://jobicy.com/api/v2/remote-jobs?get=industries).
+The public jobs API accepts `count` from 1 through 200, plus optional `geo`, `industry`, `tag`, and `cursor` query parameters. The server default is 200; these examples request smaller pages explicitly. Successful responses contain a `jobs` array. Discover valid current filter slugs with [`?get=locations`](https://jobicy.com/api/v2/remote-jobs?get=locations) and [`?get=industries`](https://jobicy.com/api/v2/remote-jobs?get=industries).
 
 | Integration | Technology | Setup | Use case |
 | --- | --- | --- | --- |
@@ -63,9 +64,22 @@ pip install -r requirements.txt
 python examples/search_jobs.py
 ```
 
+## Cursor pagination
+
+The REST feed contains jobs published within the last **seven days**, newest first. `count` is a page size, not a limit on the entire feed. There is no separate 1,000-job cap.
+
+1. Start with no `cursor`, for example `?count=100&geo=usa`.
+2. Process the `jobs` array and read `nextCursor` and `hasMore`.
+3. When `nextCursor` is a string, pass it unchanged as `cursor` in the next request. Use URL encoding and retain the same `geo`, `industry`, and `tag` filters.
+4. Stop when `nextCursor` is `null` and `hasMore` is `false`. Do not stop just because a page is short or local filtering produced no matches.
+
+Treat the cursor as opaque. It expires 24 hours after a traversal starts. HTTP 400 for an expired, invalid, or filter-mismatched cursor requires a fresh traversal without a cursor; retain delivered job IDs to avoid reposting. New jobs published after a traversal starts appear in a subsequent fresh traversal. The seven-day lower boundary keeps moving, so this feed is not an archival export.
+
+Node.js and Python provide page methods and full-feed iterators. Bots traverse all pages before establishing a baseline or delivering jobs. The Next.js board requests one page for each navigation. The WordPress widget intentionally displays only a limited set of recent jobs. REST pagination does not imply cursor support in RSS or MCP tools.
+
 ## Response fields
 
-The remote job API returns Jobicy-owned field names: `id`, `url`, `jobSlug`, `jobTitle`, `companyName`, `companyLogo`, `jobIndustry`, `jobType`, `jobGeo`, `jobLevel`, `jobExcerpt`, `jobDescription`, `pubDate`, `salaryMin`, `salaryMax`, `salaryCurrency`, and `salaryPeriod`. Optional values may be absent. `jobIndustry` and `jobType` are arrays. Descriptions may contain HTML and must never be inserted as trusted markup.
+The remote job API returns Jobicy-owned field names: `id`, `url`, `jobSlug`, `jobTitle`, `companyName`, `companyLogo`, `jobIndustry`, `jobType`, `jobGeo`, `jobLevel`, `jobExcerpt`, `jobDescription`, `pubDate`, `salaryMin`, `salaryMax`, `salaryCurrency`, and `salaryPeriod`. The response envelope includes `jobCount` (this page only), `lastUpdate`, `nextCursor`, and `hasMore`; it does not provide a total page count. Optional job values may be absent; `companyLogo` can be `false`. `jobIndustry` and `jobType` are arrays. Descriptions may contain HTML and must never be inserted as trusted markup.
 
 ## Attribution and original applications
 
@@ -73,7 +87,16 @@ Display **[Jobs powered by Jobicy](https://jobicy.com/)** in public interfaces a
 
 ## Rate limits and responsible use
 
-Request no more than 200 jobs, filter server-side when possible, cache results, deduplicate job IDs, and back off when receiving HTTP 429. The bot examples expose the requested five-minute development interval and enforce a 60-second technical minimum. Current published Jobicy fair-use guidance says automated production checks must not run more frequently than once per hour: set `CHECK_INTERVAL_SECONDS=3600` or greater before enabling a public deployment. RSS polling must likewise be hourly or less frequent. WordPress caches successful responses for one hour; the Next.js board revalidates hourly; the n8n workflow runs hourly.
+Request no more than 200 jobs per page, filter server-side when possible, cache results, deduplicate job IDs, and back off when receiving HTTP 429. Start a new automated synchronization no more frequently than once per hour; consecutive cursor requests belong to the same synchronization. Bots default to `CHECK_INTERVAL_SECONDS=3600` and clamp shorter intervals to one hour. RSS polling must likewise be hourly or less frequent. WordPress caches successful responses for one hour; the Next.js board revalidates hourly; the n8n workflow runs hourly.
+
+## Check the examples
+
+```bash
+node --test tests/pagination.test.mjs
+python3 -m unittest discover -s tests -p 'test_python_pagination.py'
+```
+
+The Python check requires `python-client/requirements.txt`. These checks use mocked API responses and temporary bot state; they do not publish messages. Run the per-directory checks and the Next.js typecheck/build as described in each README.
 
 ## Related Jobicy developer resources
 

@@ -18,6 +18,10 @@ npm start
 
 Set `DISCORD_WEBHOOK_URL` in `.env`. Optionally configure official `JOBICY_GEO` and `JOBICY_INDUSTRY` slugs, plus comma-separated case-insensitive `JOBICY_KEYWORDS`.
 
-The bundled development default is 300 seconds; values below 60 seconds are clamped. Set `CHECK_INTERVAL_SECONDS=3600` or greater for production to follow current Jobicy fair-use guidance. HTTP 429 responses extend the delay using `Retry-After` when available.
+The default and minimum synchronization interval is one hour (`CHECK_INTERVAL_SECONDS=3600`). Each pass requests pages of 100 jobs using `nextCursor` until the seven-day feed is exhausted. Filters remain fixed within a pass. HTTP 429 responses extend the delay using `Retry-After` when available; failed traversals are retried from the first page on a later pass.
 
-The first successful request establishes a silent baseline. New jobs discovered afterward are posted as Discord embeds with title, company, location, optional salary, optional employer logo, description, original Jobicy URL, and attribution. Up to 2,000 previously posted IDs persist in `data/seen-jobs.json`. A corrupt state file rebuilds the baseline rather than replaying old jobs.
+The first successful full traversal establishes a silent baseline. New jobs discovered afterward are posted as Discord embeds with title, company, location, optional salary, optional employer logo, description, original Jobicy URL, and attribution. Previously posted IDs from the current matching seven-day feed persist in `data/seen-jobs.json`. A corrupt state file rebuilds the baseline rather than replaying old jobs.
+
+IDs are pruned only after a successful full traversal, avoiding duplicates caused by a fixed ID-count cap. If you change filters and want a new silent baseline, stop the bot and remove its state file before restarting. Cursors are used only during a pass, expire after 24 hours, and are never stored as a long-term polling checkpoint.
+
+[OpenAPI JSON](https://jobicy.com/api/openapi.json) · [OpenAPI YAML](https://jobicy.com/api/openapi.yaml)

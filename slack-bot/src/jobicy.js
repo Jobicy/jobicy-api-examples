@@ -1,5 +1,5 @@
 const API_URL = "https://jobicy.com/api/v2/remote-jobs";
-const MAX_COUNT = 100;
+const MAX_COUNT = 200;
 const REQUEST_TIMEOUT_MS = 15_000;
 
 export class JobicyRequestError extends Error {
@@ -11,8 +11,8 @@ export class JobicyRequestError extends Error {
   }
 }
 
-export async function fetchJobs({ geo = "", industry = "", keywords = "", count = 50, project }) {
-  const limit = Math.max(1, Math.min(MAX_COUNT, Number.parseInt(String(count), 10) || 50));
+export async function fetchJobs({ geo = "", industry = "", keywords = "", count = 100, project }) {
+  const limit = Math.max(1, Math.min(MAX_COUNT, Number.parseInt(String(count), 10) || 100));
   const url = new URL(API_URL);
   url.searchParams.set("count", String(limit));
 
@@ -23,66 +23,79 @@ export async function fetchJobs({ geo = "", industry = "", keywords = "", count 
 
   if (terms.length === 1) url.searchParams.set("tag", terms[0]);
 
-  let response;
-
-  try {
-    response = await fetch(url, {
-      headers: {
-        Accept: "application/json",
-        "User-Agent": `Jobicy-Integration-Example/${project}`
-      },
-      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS)
-    });
-  } catch (error) {
-    throw new JobicyRequestError(`Jobicy request failed: ${error.message}`);
-  }
-
-  if (!response.ok) {
-    const retryHeader = response.headers.get("retry-after");
-    const retryAfterSeconds = retryHeader && /^\d+$/.test(retryHeader) ? Number(retryHeader) : null;
-    throw new JobicyRequestError(`Jobicy API returned HTTP ${response.status}`, response.status, retryAfterSeconds);
-  }
-
-  let payload;
-
-  try {
-    payload = await response.json();
-  } catch {
-    throw new JobicyRequestError("Jobicy API returned invalid JSON");
-  }
-
-  if (!payload || !Array.isArray(payload.jobs)) {
-    throw new JobicyRequestError("Jobicy API response does not contain a jobs array");
-  }
-
   const unique = new Map();
+  const cursors = new Set();
 
-  for (const job of payload.jobs) {
-    if (!job || typeof job !== "object" || job.id == null || typeof job.url !== "string") continue;
-
-    let canonical;
+  do {
+    let response;
 
     try {
-      canonical = new URL(job.url);
-    } catch {
-      continue;
+      response = await fetch(url, {
+        headers: {
+          Accept: "application/json",
+          "User-Agent": `Jobicy-Integration-Example/${project}`
+        },
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS)
+      });
+    } catch (error) {
+      throw new JobicyRequestError(`Jobicy request failed: ${error.message}`);
     }
 
-    if (canonical.protocol !== "https:" || canonical.hostname !== "jobicy.com") continue;
+    if (!response.ok) {
+      const retryHeader = response.headers.get("retry-after");
+      const retryAfterSeconds = retryHeader && /^\d+$/.test(retryHeader) ? Number(retryHeader) : null;
+      throw new JobicyRequestError(`Jobicy API returned HTTP ${response.status}`, response.status, retryAfterSeconds);
+    }
 
-    const searchable = [
-      job.jobTitle,
-      job.companyName,
-      job.jobGeo,
-      job.jobExcerpt,
-      ...(Array.isArray(job.jobIndustry) ? job.jobIndustry : []),
-      ...(Array.isArray(job.jobType) ? job.jobType : [])
-    ].filter(Boolean).join(" ").toLowerCase();
+    let payload;
 
-    if (terms.length && !terms.some((term) => searchable.includes(term))) continue;
+    try {
+      payload = await response.json();
+    } catch {
+      throw new JobicyRequestError("Jobicy API returned invalid JSON");
+    }
 
-    unique.set(String(job.id), job);
-  }
+    if (!payload || !Array.isArray(payload.jobs)) {
+      throw new JobicyRequestError("Jobicy API response does not contain a jobs array");
+    }
+
+    for (const job of payload.jobs) {
+      if (!job || typeof job !== "object" || job.id == null || typeof job.url !== "string") continue;
+
+      let canonical;
+
+      try {
+        canonical = new URL(job.url);
+      } catch {
+        continue;
+      }
+
+      if (canonical.protocol !== "https:" || canonical.hostname !== "jobicy.com") continue;
+
+      const searchable = [
+        job.jobTitle,
+        job.companyName,
+        job.jobGeo,
+        job.jobExcerpt,
+        ...(Array.isArray(job.jobIndustry) ? job.jobIndustry : []),
+        ...(Array.isArray(job.jobType) ? job.jobType : [])
+      ].filter(Boolean).join(" ").toLowerCase();
+
+      if (terms.length && !terms.some((term) => searchable.includes(term))) continue;
+
+      unique.set(String(job.id), job);
+    }
+
+    const cursor = payload.nextCursor;
+    if ((cursor !== null && (typeof cursor !== "string" || !cursor.length)) ||
+        typeof payload.hasMore !== "boolean" || payload.hasMore !== (cursor !== null)) {
+      throw new JobicyRequestError("Jobicy API returned invalid pagination metadata");
+    }
+    if (cursor === null) break;
+    if (cursors.has(cursor)) throw new JobicyRequestError("Jobicy returned a repeated cursor");
+    cursors.add(cursor);
+    url.searchParams.set("cursor", cursor);
+  } while (true);
 
   return [...unique.values()];
 }

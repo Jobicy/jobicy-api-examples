@@ -30,6 +30,16 @@ Build a portable, account-safe Make scenario without a fabricated blueprint or a
 
 Leave unwanted query-string fields out rather than inserting fake values. Run this module once so Make can discover the real response schema.
 
+## Cursor pagination
+
+`count` is a page size from 1 to 200, not a total limit. The endpoint covers the last seven days. For full synchronization, repeat the HTTP request while `nextCursor` is non-null: map it unchanged into the next request's `cursor` query field, keep `geo`, `industry`, and `tag` unchanged, and process each page's `jobs[]`. Finish when `nextCursor` is null and `hasMore` is false, even if local filtering yielded no jobs on earlier pages.
+
+This scenario outline needs a cursor loop or a continuation scenario configured in your Make account; a single HTTP module followed by an Iterator covers only the first page. Store any continuation cursor separately from delivered IDs, advance it only after that page is processed, clear it when the traversal finishes, and start new traversals hourly or less often. A cursor expires after 24 hours; on HTTP 400 clear it and restart with the same delivery-ID store. On HTTP 429 defer using `Retry-After`. Add a repeated-cursor guard and a request ceiling; treat reaching the ceiling as incomplete synchronization.
+
+Establish the initial silent baseline across **all pages** before enabling delivery. Retain IDs for jobs still inside the seven-day feed; do not prune a fixed number of IDs while those jobs remain visible. Leaving the window alone does not prove a vacancy is closed.
+
+[OpenAPI JSON](https://jobicy.com/api/openapi.json) · [OpenAPI YAML](https://jobicy.com/api/openapi.yaml)
+
 ## Iterate and filter
 
 Add **Tools → Iterator** and map its **Array** field to the HTTP module's parsed `jobs[]` collection. Each emitted bundle contains the real fields `id`, `url`, `jobTitle`, `companyName`, `jobGeo`, `jobIndustry[]`, `jobType[]`, `jobExcerpt`, `salaryMin`, `salaryMax`, `salaryCurrency`, and `salaryPeriod` when supplied.
@@ -40,7 +50,7 @@ Add a connection filter when needed. For a case-insensitive keyword match, compa
 
 Create a Make data store with a text key and optional `published_at` date field. Pass the iterator's `id` converted to text into **Check the existence of a record**. Continue only when the result is false. Add the record after the Telegram or Slack message succeeds. Apply a retention policy to keep the store bounded.
 
-To avoid flooding a new channel, perform the first run with the destination module temporarily disabled and populate the data store from the current response. Enable message delivery only after this baseline is established.
+To avoid flooding a new channel, perform the first run with the destination module temporarily disabled and populate the data store from the entire paginated feed. Enable message delivery only after this baseline is established.
 
 ## Telegram mapping
 

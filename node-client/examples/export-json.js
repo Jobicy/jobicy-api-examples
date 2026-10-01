@@ -5,7 +5,7 @@ import { JobicyClient } from "../src/index.js";
 const output = path.resolve(process.argv[2] || "jobs.json");
 
 try {
-  const jobs = await new JobicyClient().getJobs({ count: 50 });
+  const jobs = await new JobicyClient().getAllJobs({ count: 50 });
   await mkdir(path.dirname(output), { recursive: true });
   await writeFile(output, `${JSON.stringify({ source: "https://jobicy.com/", exportedAt: new Date().toISOString(), jobs }, null, 2)}\n`, "utf8");
   console.log(`Exported ${jobs.length} Jobicy jobs to ${output}`);

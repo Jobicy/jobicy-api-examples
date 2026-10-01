@@ -1,8 +1,8 @@
 const settings = typeof inputData === "object" && inputData ? inputData : {};
 const count = Number.parseInt(settings.count || "50", 10);
 
-if (!Number.isInteger(count) || count < 1 || count > 100) {
-  throw new Error("count must be an integer between 1 and 100");
+if (!Number.isInteger(count) || count < 1 || count > 200) {
+  throw new Error("count must be an integer between 1 and 200");
 }
 
 const endpoint = new URL("https://jobicy.com/api/v2/remote-jobs");
@@ -12,6 +12,12 @@ for (const key of ["geo", "industry", "tag"]) {
   if (String(settings[key] || "").trim()) {
     endpoint.searchParams.set(key, String(settings[key]).trim());
   }
+}
+
+const cursor = settings.cursor;
+if (cursor !== undefined && cursor !== null && cursor !== "") {
+  if (typeof cursor !== "string") throw new Error("cursor must be a string");
+  endpoint.searchParams.set("cursor", cursor);
 }
 
 const response = await fetch(endpoint, {
@@ -36,6 +42,12 @@ try {
 
 if (!payload || !Array.isArray(payload.jobs)) {
   throw new Error("Jobicy API response does not contain a jobs array");
+}
+
+const nextCursor = payload.nextCursor;
+if ((nextCursor !== null && (typeof nextCursor !== "string" || !nextCursor.length)) ||
+    typeof payload.hasMore !== "boolean" || payload.hasMore !== (nextCursor !== null)) {
+  throw new Error("Jobicy API returned invalid pagination metadata");
 }
 
 const seen = new Set();
@@ -83,6 +95,8 @@ for (const job of payload.jobs) {
 }
 
 output = {
+  nextCursor: nextCursor || "",
+  hasMore: payload.hasMore,
   count: jobs.length,
   ids: jobs.map((job) => job.id),
   titles: jobs.map((job) => job.title),

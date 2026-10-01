@@ -34,6 +34,26 @@ python examples/salary_filter.py --minimum 120000 --currency USD --period yearly
 python examples/daily_digest.py --count 12 --geo canada --tag python
 ```
 
-`export_csv.py` writes a real UTF-8 CSV file. The salary example excludes jobs without disclosed compensation and compares only the requested currency and pay period. The digest writes readable text suitable for a scheduled newsletter pipeline.
+## Read all available pages
 
-Handle `JobicyError` for network failures, invalid JSON, malformed responses, and HTTP failures. Handle `JobicyRateLimitError` separately when you need its optional `retry_after_seconds` value. Cache automated queries and follow the published [Jobicy fair-use guidance](https://jobicy.com/jobs-rss-feed).
+```python
+with JobicyClient() as client:
+    for job in client.iter_jobs(count=100, geo="usa"):
+        print(job.job_title, job.url)
+
+with JobicyClient() as client:
+    first = client.get_jobs_page(count=100, geo="usa")
+    if first.next_cursor is not None:
+        second = client.get_jobs_page(count=100, geo="usa", cursor=first.next_cursor)
+        print(second.jobs)
+```
+
+`get_jobs()` still returns a list for one page. `get_jobs_page()` returns a `JobPage` with `jobs`, `next_cursor`, and `has_more`; `iter_jobs()` streams all pages and `get_all_jobs()` collects them. Counts range from 1 to 200 per page; the client default remains 50. Iterators retain filters, deduplicate across pages, continue past empty pages with a next cursor, and reject repeated cursors.
+
+The feed covers the last seven days. Cursors expire after 24 hours; HTTP 400 requires a fresh traversal without a cursor and preserved delivery IDs. HTTP failures stop an export rather than returning a partial result. Start new automated traversals hourly or less often.
+
+[OpenAPI JSON](https://jobicy.com/api/openapi.json) · [OpenAPI YAML](https://jobicy.com/api/openapi.yaml)
+
+`export_csv.py` traverses all pages and writes a real UTF-8 CSV file. Its `--count` controls page size. The salary example traverses the available feed, excludes jobs without disclosed compensation and compares only the requested currency and pay period. The digest writes readable text suitable for a scheduled newsletter pipeline.
+
+`JobicyError.status` contains the HTTP status when available. Handle `JobicyError` for network failures, invalid JSON, malformed responses, and HTTP failures. Handle `JobicyRateLimitError` separately when you need its optional `retry_after_seconds` value. Cache automated queries and follow the published [Jobicy fair-use guidance](https://jobicy.com/jobs-rss-feed).

@@ -22,8 +22,12 @@ npm start
 
 Set `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` in `.env`. Optional `JOBICY_GEO` and `JOBICY_INDUSTRY` use the official Jobicy slugs. `JOBICY_KEYWORDS` accepts comma-separated case-insensitive alternatives, for example `python,backend,platform`.
 
-The supplied development interval is 300 seconds, with a technical minimum of 60 seconds. Jobicy's published production fair-use guidance requires no more than one automated request per hour: set `CHECK_INTERVAL_SECONDS=3600` or greater before enabling a deployed bot.
+The default and minimum synchronization interval is one hour (`CHECK_INTERVAL_SECONDS=3600`). Each pass requests pages of 100 jobs using `nextCursor` until the seven-day feed is exhausted. Filters remain fixed within a pass. HTTP 429 responses extend the delay using `Retry-After` when available; failed traversals are retried from the first page on a later pass.
 
-On the first successful API request, the bot records current matching job IDs without publishing them. Later polls publish only newly appearing listings. State is stored in `data/seen-jobs.json`, survives restarts, is limited to 2,000 IDs, and is rebuilt safely if corrupt. Failed Telegram deliveries are not marked as sent and will be retried on a later check.
+On the first successful full traversal, the bot records current matching job IDs without publishing them. Later polls publish only newly appearing listings. State is stored in `data/seen-jobs.json`, survives restarts, retains IDs belonging to the current matching seven-day feed, and is rebuilt safely if corrupt. Failed Telegram deliveries are not marked as sent and will be retried on a later check.
 
 Messages use escaped Telegram HTML, preserve the original Jobicy listing URL, and include a discreet Jobicy attribution link.
+
+IDs are pruned only after a successful full traversal, avoiding duplicates caused by a fixed ID-count cap. If you change filters and want a new silent baseline, stop the bot and remove its state file before restarting. Cursors are used only during a pass, expire after 24 hours, and are never stored as a long-term polling checkpoint.
+
+[OpenAPI JSON](https://jobicy.com/api/openapi.json) · [OpenAPI YAML](https://jobicy.com/api/openapi.yaml)

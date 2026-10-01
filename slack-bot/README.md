@@ -20,6 +20,10 @@ Set `SLACK_WEBHOOK_URL`. Use `JOBICY_GEO` and `JOBICY_INDUSTRY` for server-side 
 
 Messages use a Block Kit header, company and location fields, optional compensation, a plain-text excerpt, a **View Job** button pointing to the canonical Jobicy listing, and a linked Jobicy attribution line.
 
-Existing jobs are recorded silently during the initial successful request. Later requests publish only new IDs. Persistent state is bounded to 2,000 entries and survives process restarts. Failed posts remain eligible for a future retry.
+Existing jobs are recorded silently during the initial successful full traversal. Later requests publish only new IDs. Persistent state is bounded by the current matching seven-day feed and survives process restarts. Failed posts remain eligible for a future retry.
 
-The development polling default is 300 seconds, with a 60-second technical floor. Set `CHECK_INTERVAL_SECONDS=3600` or greater in production to comply with Jobicy's published automated-request guidance.
+The default and minimum synchronization interval is one hour (`CHECK_INTERVAL_SECONDS=3600`). Each pass requests pages of 100 jobs using `nextCursor` until the seven-day feed is exhausted. Filters remain fixed within a pass. HTTP 429 responses extend the delay using `Retry-After` when available; failed traversals are retried from the first page on a later pass.
+
+IDs are pruned only after a successful full traversal, avoiding duplicates caused by a fixed ID-count cap. If you change filters and want a new silent baseline, stop the bot and remove its state file before restarting. Cursors are used only during a pass, expire after 24 hours, and are never stored as a long-term polling checkpoint.
+
+[OpenAPI JSON](https://jobicy.com/api/openapi.json) · [OpenAPI YAML](https://jobicy.com/api/openapi.yaml)
