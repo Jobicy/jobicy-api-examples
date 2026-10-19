@@ -54,7 +54,7 @@ The feed covers the last seven days. Cursors expire after 24 hours; HTTP 400 req
 
 ## Check stored job statuses
 
-`GET https://jobicy.com/api/v2/remote-jobs/status?ids=123456,123457,123458` checks up to 100 supplied IDs per request. Replace example IDs with IDs you have stored. Duplicate IDs are returned once in first-occurrence order. The response contains `checkedAt`, `count`, and `jobs: [{ id, status }]`.
+`GET https://jobicy.com/api/jobs/status?ids=123456,123457,123458` checks up to 100 supplied IDs per request. Replace example IDs with IDs you have stored. Duplicate IDs are returned once in first-occurrence order. The response contains `checkedAt`, `count`, and `jobs: [{ id, status }]`.
 
 `active` means open, `closed` means expired or filled, and `unknown` means the record is missing or not exposed publicly. The check includes older jobs outside the seven-day feed window. Absence from the feed does not imply closure. Keep `unknown` and request failures separate from `closed`.
 

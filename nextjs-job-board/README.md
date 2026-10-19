@@ -21,7 +21,7 @@ npm start
 
 ## Filtering and pagination
 
-Use the keyword, location slug, and industry slug fields. The application forwards these as the official Jobicy API `tag`, `geo`, and `industry` query parameters. Discover current [location slugs](https://jobicy.com/api/v2/remote-jobs?get=locations) and [industry slugs](https://jobicy.com/api/v2/remote-jobs?get=industries).
+Use the keyword, location slug, and industry slug fields. The application forwards these as the official Jobicy API `tag`, `geo`, and `industry` query parameters. Discover current [location slugs](https://jobicy.com/api/jobs?get=locations) and [industry slugs](https://jobicy.com/api/jobs?get=industries).
 
 The application requests `count=12` from Jobicy and renders that API page. **Older listings** passes the opaque `nextCursor` as `cursor`, retaining the filters; **Latest listings** starts a fresh traversal. It shows the number of listings on the current page without inventing a total page count. Filter and cursor state live in URL query parameters. Cursors expire after 24 hours; an HTTP 400 continuation shows a restart link retaining the filters. The feed includes only the last seven days. Upstream responses are cached and revalidated once per hour.
 

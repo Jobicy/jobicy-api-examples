@@ -18,7 +18,7 @@ Zapier's RSS trigger handles new feed items and deduplication. Avoid feed config
 
 1. Add **Schedule by Zapier** and run once per hour or less often.
 2. Add **Webhooks by Zapier → GET**.
-3. Set the URL to `https://jobicy.com/api/v2/remote-jobs`.
+3. Set the URL to `https://jobicy.com/api/jobs`.
 4. Add query-string parameters `count=50` and optional `geo`, `industry`, or `tag` filters.
 5. Set an `Accept: application/json` header.
 6. Add **Looping by Zapier → Create Loop From Line Items** using the response's `jobs` array fields.

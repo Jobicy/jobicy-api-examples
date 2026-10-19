@@ -5,7 +5,7 @@ if (!defined('ABSPATH')) {
 
 final class Jobicy_Remote_Jobs_Api_Client
 {
-    private const API_URL = 'https://jobicy.com/api/v2/remote-jobs';
+    private const API_URL = 'https://jobicy.com/api/jobs';
     private const CACHE_TTL = HOUR_IN_SECONDS;
     private const STALE_TTL = DAY_IN_SECONDS;
 

@@ -13,7 +13,7 @@ test("Status client deduplicates and restores request order", async (t) => {
     return response(payload([record(3, "unknown"), record(2, "closed"), record(1)]));
   });
   assert.deepEqual(await new JobicyClient().getJobStatuses([1, " 2 ", 1, 3]), [record(1), record(2, "closed"), record(3, "unknown")]);
-  assert.equal(requested.pathname, "/api/v2/remote-jobs/status");
+  assert.equal(requested.pathname, "/api/jobs/status");
   assert.equal(requested.search, "?ids=1%2C2%2C3");
 });
 

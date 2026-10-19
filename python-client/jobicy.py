@@ -116,7 +116,7 @@ class JobStatus:
 
 
 class JobicyClient:
-    api_url = "https://jobicy.com/api/v2/remote-jobs"
+    api_url = "https://jobicy.com/api/jobs"
 
     def __init__(self, timeout: float = 15.0, session: requests.Session | None = None) -> None:
         if not isinstance(timeout, (int, float)) or timeout <= 0:

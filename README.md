@@ -6,13 +6,13 @@ Production-ready examples for integrating Jobicy remote jobs into websites, appl
 
 ## Data sources
 
-- [Jobs API](https://jobicy.com/api/v2/remote-jobs)
+- [Jobs API](https://jobicy.com/api/jobs)
 - [OpenAPI JSON](https://jobicy.com/api/openapi.json) · [OpenAPI YAML](https://jobicy.com/api/openapi.yaml)
 - [RSS feed](https://jobicy.com/jobs/feed)
 - [MCP endpoint](https://jobicy.com/mcp)
 - [Official API, RSS, and MCP documentation](https://jobicy.com/jobs-rss-feed)
 
-The public jobs API accepts `count` from 1 through 200, plus optional `geo`, `industry`, `tag`, and `cursor` query parameters. The server default is 200; these examples request smaller pages explicitly. Successful responses contain a `jobs` array. Discover valid current filter slugs with [`?get=locations`](https://jobicy.com/api/v2/remote-jobs?get=locations) and [`?get=industries`](https://jobicy.com/api/v2/remote-jobs?get=industries).
+The public jobs API accepts `count` from 1 through 200, plus optional `geo`, `industry`, `tag`, and `cursor` query parameters. The server default is 200; these examples request smaller pages explicitly. Successful responses contain a `jobs` array. Discover valid current filter slugs with [`?get=locations`](https://jobicy.com/api/jobs?get=locations) and [`?get=industries`](https://jobicy.com/api/jobs?get=industries).
 
 | Integration | Technology | Setup | Use case |
 | --- | --- | --- | --- |
@@ -79,7 +79,7 @@ Node.js and Python provide page methods and full-feed iterators. Bots traverse a
 
 ## Check stored job statuses
 
-`GET https://jobicy.com/api/v2/remote-jobs/status?ids=123456,123457,123458` checks up to 100 supplied IDs per request. Replace example IDs with IDs you have stored. Duplicate IDs are returned once in first-occurrence order. The response contains `checkedAt`, `count`, and `jobs: [{ id, status }]`.
+`GET https://jobicy.com/api/jobs/status?ids=123456,123457,123458` checks up to 100 supplied IDs per request. Replace example IDs with IDs you have stored. Duplicate IDs are returned once in first-occurrence order. The response contains `checkedAt`, `count`, and `jobs: [{ id, status }]`.
 
 `active` means open, `closed` means expired or filled, and `unknown` means the record is missing or not exposed publicly. The check includes older jobs outside the seven-day feed window. Absence from the feed does not imply closure. Keep `unknown` and request failures separate from `closed`.
 

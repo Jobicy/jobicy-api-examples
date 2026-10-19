@@ -22,7 +22,7 @@ class StatusTests(unittest.TestCase):
     def test_order_dedup_and_unknown(self):
         client, session = self.client(response([{"id": 3, "status": "unknown"}, {"id": 2, "status": "closed"}, {"id": 1, "status": "active"}]))
         self.assertEqual(client.get_job_statuses([1, " 2 ", 1, 3]), [JobStatus(1, "active"), JobStatus(2, "closed"), JobStatus(3, "unknown")])
-        self.assertEqual(session.get.call_args.args[0], "https://jobicy.com/api/v2/remote-jobs/status")
+        self.assertEqual(session.get.call_args.args[0], "https://jobicy.com/api/jobs/status")
         self.assertEqual(session.get.call_args.kwargs["params"], {"ids": "1,2,3"})
 
     def test_invalid_and_maximum_batch(self):

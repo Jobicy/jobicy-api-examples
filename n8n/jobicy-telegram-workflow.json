@@ -64,7 +64,7 @@
     },
     {
       "parameters": {
-        "url": "https://jobicy.com/api/v2/remote-jobs",
+        "url": "https://jobicy.com/api/jobs",
         "sendQuery": true,
         "queryParameters": {
           "parameters": [
@@ -100,7 +100,7 @@
           "pagination": {
             "pagination": {
               "paginationMode": "responseContainsNextURL",
-              "nextURL": "={{ (() => { const config = $(\"Configure filters\").first().json; const parts = [\"count=\" + encodeURIComponent(config.count)]; for (const key of [\"geo\", \"industry\"]) { if (String(config[key] || \"\").trim()) parts.push(key + \"=\" + encodeURIComponent(String(config[key]).trim())); } parts.push(\"cursor=\" + encodeURIComponent($response.body.nextCursor)); return \"https://jobicy.com/api/v2/remote-jobs?\" + parts.join(\"&\"); })() }}",
+              "nextURL": "={{ (() => { const config = $(\"Configure filters\").first().json; const parts = [\"count=\" + encodeURIComponent(config.count)]; for (const key of [\"geo\", \"industry\"]) { if (String(config[key] || \"\").trim()) parts.push(key + \"=\" + encodeURIComponent(String(config[key]).trim())); } parts.push(\"cursor=\" + encodeURIComponent($response.body.nextCursor)); return \"https://jobicy.com/api/jobs?\" + parts.join(\"&\"); })() }}",
               "paginationCompleteWhen": "other",
               "completeExpression": "={{ !$response.body.nextCursor }}",
               "limitPagesFetched": true,

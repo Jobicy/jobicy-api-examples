@@ -1,6 +1,6 @@
 import type { JobicyJob, JobicyPage, JobSearchFilters } from "@/types/job";
 
-const API_URL = "https://jobicy.com/api/v2/remote-jobs";
+const API_URL = "https://jobicy.com/api/jobs";
 
 export class JobicyCursorError extends Error {}
 

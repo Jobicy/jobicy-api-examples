@@ -14,7 +14,7 @@ export class JobicyClient {
     }
 
     this.timeout = timeout;
-    this.apiUrl = "https://jobicy.com/api/v2/remote-jobs";
+    this.apiUrl = "https://jobicy.com/api/jobs";
   }
 
   async getJobs(options = {}) {

@@ -1,4 +1,4 @@
-const API_URL = "https://jobicy.com/api/v2/remote-jobs";
+const API_URL = "https://jobicy.com/api/jobs";
 const MAX_COUNT = 200;
 const REQUEST_TIMEOUT_MS = 15_000;
 

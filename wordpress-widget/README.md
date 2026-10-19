@@ -23,7 +23,7 @@ A self-contained WordPress plugin that renders cached Jobicy remote jobs using a
 | `industry` | Empty | Official Jobicy category slug |
 | `tag` | Empty | Official Jobicy keyword search |
 
-Discover current [location slugs](https://jobicy.com/api/v2/remote-jobs?get=locations) and [industry slugs](https://jobicy.com/api/v2/remote-jobs?get=industries).
+Discover current [location slugs](https://jobicy.com/api/jobs?get=locations) and [industry slugs](https://jobicy.com/api/jobs?get=industries).
 
 The widget intentionally requests one page of recent listings; it does not crawl the entire seven-day feed. The API allows up to 200 jobs per page and supports cursors for full-feed integrations.
 

@@ -5,7 +5,7 @@ if (!Number.isInteger(count) || count < 1 || count > 200) {
   throw new Error("count must be an integer between 1 and 200");
 }
 
-const endpoint = new URL("https://jobicy.com/api/v2/remote-jobs");
+const endpoint = new URL("https://jobicy.com/api/jobs");
 endpoint.searchParams.set("count", String(count));
 
 for (const key of ["geo", "industry", "tag"]) {

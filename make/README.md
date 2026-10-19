@@ -18,7 +18,7 @@ Build a portable, account-safe Make scenario without a fabricated blueprint or a
 | Field | Value |
 | --- | --- |
 | Method | `GET` |
-| URL | `https://jobicy.com/api/v2/remote-jobs` |
+| URL | `https://jobicy.com/api/jobs` |
 | Query string: `count` | `50` |
 | Query string: `geo` | Optional valid slug, such as `usa` |
 | Query string: `industry` | Optional valid slug, such as `engineering` |
