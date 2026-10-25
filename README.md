@@ -14,6 +14,25 @@ Production-ready examples for integrating Jobicy remote jobs into websites, appl
 
 The public jobs API accepts `count` from 1 through 200, plus optional `geo`, `industry`, `tag`, and `cursor` query parameters. The server default is 200; these examples request smaller pages explicitly. Successful responses contain a `jobs` array. Discover valid current filter slugs with [`?get=locations`](https://jobicy.com/api/jobs?get=locations) and [`?get=industries`](https://jobicy.com/api/jobs?get=industries).
 
+## Standalone integration projects
+
+Start with these independent repositories for installable SDKs, deployable applications, and importable automations. Each project has its own setup guide, license, tests, and GitHub Actions checks.
+
+| Project | Technology | Use case |
+| --- | --- | --- |
+| [Next.js Job Board](https://github.com/Jobicy/nextjs-job-board) | Next.js, TypeScript | Build and deploy a remote job board with filtering and cursor pagination |
+| [Telegram Jobs Bot](https://github.com/Jobicy/telegram-jobs-bot) | Node.js, Docker Compose | Publish new jobs with hourly synchronization and persistent deduplication |
+| [Google Sheets](https://github.com/Jobicy/jobicy-google-sheets) | Google Apps Script | Import jobs, update rows by ID, and reconcile stored listing statuses |
+| [n8n Workflows](https://github.com/Jobicy/jobicy-n8n-workflows) | n8n | Import an hourly Telegram workflow with pagination and deduplication |
+| [JavaScript & TypeScript SDK](https://github.com/Jobicy/jobicy-js) | Node.js, native fetch | Install from GitHub; search, traverse pages, and check stored job statuses |
+| [Python SDK](https://github.com/Jobicy/jobicy-python) | Python 3.10+, requests | Install from GitHub; search, export, and check stored job statuses |
+
+The SDKs can be installed directly from GitHub; an npm or PyPI release is not required.
+
+## Examples in this repository
+
+The examples below remain available for learning and existing integrations. For ongoing work with Next.js, Telegram, n8n, JavaScript, Python, or Google Sheets, use the standalone projects above.
+
 | Integration | Technology | Setup | Use case |
 | --- | --- | --- | --- |
 | [Telegram Bot](./telegram-bot/) | Node.js | Easy | Publish matching jobs to a Telegram channel |
