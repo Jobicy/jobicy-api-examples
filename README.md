@@ -26,12 +26,18 @@ Start with these independent repositories for installable SDKs, deployable appli
 | [n8n Workflows](https://github.com/Jobicy/jobicy-n8n-workflows) | n8n | Import an hourly Telegram workflow with pagination and deduplication |
 | [JavaScript & TypeScript SDK](https://github.com/Jobicy/jobicy-js) | Node.js, native fetch | Install from GitHub; search, traverse pages, and check stored job statuses |
 | [Python SDK](https://github.com/Jobicy/jobicy-python) | Python 3.10+, requests | Install from GitHub; search, export, and check stored job statuses |
+| [WordPress Jobs Widget](https://github.com/Jobicy/wordpress-jobs-widget) | PHP, WordPress | Install a cached remote-jobs shortcode widget from a generated plugin ZIP |
+| [Discord Jobs Bot](https://github.com/Jobicy/discord-jobs-bot) | Node.js, Discord webhooks | Publish deduplicated job alerts with hourly polling and persistent state |
+| [Airtable Sync](https://github.com/Jobicy/jobicy-airtable) | Node.js, Airtable API | Upsert jobs by ID and reconcile older listing statuses |
+| [PostgreSQL Data Pipeline](https://github.com/Jobicy/jobicy-data-pipeline) | Python, PostgreSQL | Import and reconcile jobs with transactional updates and rollback |
+| [Streamlit Dashboard](https://github.com/Jobicy/jobicy-streamlit-dashboard) | Python, Streamlit, pandas | Explore a current job sample and compare disclosed salary ranges by currency and period |
+| [AI Agent Examples](https://github.com/Jobicy/jobicy-agent-examples) | Node.js, official MCP SDK | Run job-search, company-research and career-guide workflows through Jobicy MCP |
 
 The SDKs can be installed directly from GitHub; an npm or PyPI release is not required.
 
 ## Examples in this repository
 
-The examples below remain available for learning and existing integrations. For ongoing work with Next.js, Telegram, n8n, JavaScript, Python, or Google Sheets, use the standalone projects above.
+The examples below remain available for learning and existing integrations. For ongoing work with the integrations listed above, use their standalone projects.
 
 | Integration | Technology | Setup | Use case |
 | --- | --- | --- | --- |
